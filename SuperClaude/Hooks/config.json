@@ -1,0 +1,242 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__(sequential|context7|magic|playwright)__.*",
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/pre_tool_use.py",
+            "description": "SuperClaude MCP routing optimization hook",
+            "priority": "high",
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": "(Read|Write|Edit|MultiEdit|Grep|Glob)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/pre_tool_use.py",
+            "description": "SuperClaude file operation validation hook",
+            "priority": "medium",
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": "(Task|TodoWrite|Bash)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/pre_tool_use.py", 
+            "description": "SuperClaude task coordination hook",
+            "priority": "medium",
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/pre_tool_use.py",
+            "description": "SuperClaude general pre-tool hook",
+            "priority": "low",
+            "outputFormat": "json"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "(Edit|MultiEdit|Write)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/post_tool_use.py",
+            "description": "SuperClaude file modification validation hook",
+            "priority": "high", 
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__(sequential|context7|magic|playwright)__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/post_tool_use.py",
+            "description": "SuperClaude MCP result processing hook",
+            "priority": "high",
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/post_tool_use.py",
+            "description": "SuperClaude general post-tool hook",
+            "priority": "medium",
+            "outputFormat": "json"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/notification.py",
+            "description": "SuperClaude permission request handler",
+            "priority": "critical",
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": "idle|timeout",
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/notification.py",
+            "description": "SuperClaude idle state notification handler",
+            "priority": "low",
+            "outputFormat": "json"
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/notification.py",
+            "description": "SuperClaude general notification logger",
+            "priority": "low",
+            "outputFormat": "json"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/stop.py",
+            "description": "SuperClaude session cleanup and performance reporting hook",
+            "priority": "critical",
+            "outputFormat": "json",
+            "timeout": 500
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/subagent_stop.py",
+            "description": "SuperClaude subagent coordination and delegation cleanup hook", 
+            "priority": "high",
+            "outputFormat": "json",
+            "timeout": 200
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/anton/SuperClaude_MCP/SuperClaude/Hooks/precompact.py",
+            "description": "SuperClaude context optimization and preservation hook",
+            "priority": "critical", 
+            "outputFormat": "json",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  },
+  "settings": {
+    "maxExecutionTime": 100,
+    "enableLogging": true,
+    "logLevel": "INFO", 
+    "bridgeServiceUrl": "http://localhost:8080",
+    "fallbackBehavior": "allow",
+    "performance": {
+      "enableCaching": true,
+      "cacheTTL": 300,
+      "enableSmartRouting": true,
+      "enableSelectiveActivation": true,
+      "performanceTarget": 50,
+      "circuitBreakerThreshold": 5
+    },
+    "matcherRules": {
+      "enableRegexOptimization": true,
+      "caseSensitive": false,
+      "maxMatcherDepth": 3,
+      "priorityBasedExecution": true
+    },
+    "outputControl": {
+      "defaultFormat": "json",
+      "enableCompression": true,
+      "maxOutputSize": 10240,
+      "includeMetadata": true,
+      "enableDebugOutput": false
+    },
+    "hookSpecific": {
+      "preToolUse": {
+        "enablePersonaDetection": true,
+        "enableComplexityAssessment": true,
+        "enableMCPRouting": true
+      },
+      "postToolUse": {
+        "enableQualityGates": true,
+        "enableResultValidation": true,
+        "enableContextUpdates": true
+      },
+      "stop": {
+        "enablePerformanceReporting": true,
+        "enableSessionCleanup": true,
+        "generateRecommendations": true
+      },
+      "subagentStop": {
+        "enableCoordination": true,
+        "enableResultAggregation": true,
+        "enableDependencyTracking": true
+      },
+      "preCompact": {
+        "enableContextAnalysis": true,
+        "enablePreservationPlanning": true,
+        "enableOptimizationAnalysis": true
+      }
+    },
+    "environment": {
+      "CLAUDE_ENV": "development",
+      "BRIDGE_HOOKS_URL": "http://localhost:8080",
+      "HOOK_TIMEOUT_MS": "100",
+      "POST_HOOK_TIMEOUT_MS": "50", 
+      "NOTIFICATION_TIMEOUT_MS": "100",
+      "STOP_HOOK_TIMEOUT_MS": "500",
+      "SUBAGENT_STOP_TIMEOUT_MS": "200",
+      "PRECOMPACT_TIMEOUT_MS": "300",
+      "ENABLE_PERFORMANCE_MONITORING": "true",
+      "ENABLE_SMART_CACHING": "true"
+    }
+  }
+}

@@ -13,6 +13,7 @@ import {
   PerformanceThresholds,
   PerformanceAlert
 } from '../types.js';
+import { ExternalServerManager, ExternalServerConfig } from './ExternalServerManager.js';
 
 export interface MCPServerCapability {
   name: string;
@@ -43,9 +44,13 @@ export class MCPServerRouter extends EventEmitter {
   private routingCache: Map<string, MCPRoutingDecision> = new Map();
   private performanceThresholds: PerformanceThresholds;
   private coordinationService: CrossServerCoordinationService;
+  private externalServerManager: ExternalServerManager;
   private healthCheckInterval: NodeJS.Timeout;
 
-  constructor(thresholds?: Partial<PerformanceThresholds>) {
+  constructor(
+    thresholds?: Partial<PerformanceThresholds>,
+    externalServerConfig?: ExternalServerConfig
+  ) {
     super();
     
     this.performanceThresholds = {
@@ -56,8 +61,22 @@ export class MCPServerRouter extends EventEmitter {
     };
 
     this.coordinationService = new CrossServerCoordinationService();
+    this.externalServerManager = new ExternalServerManager(externalServerConfig);
     this.initializeServerCapabilities();
     this.startHealthMonitoring();
+
+    // Listen for external server events
+    this.externalServerManager.on('circuit_breaker_open', (serverId) => {
+      this.updateServerAvailability(serverId, false);
+    });
+
+    this.externalServerManager.on('server_connected', (serverId) => {
+      this.updateServerAvailability(serverId, true);
+    });
+
+    this.externalServerManager.on('server_disconnected', (serverId) => {
+      this.updateServerAvailability(serverId, false);
+    });
 
     logger.info('MCP Server Router initialized with sub-100ms performance target');
   }
@@ -348,10 +367,70 @@ export class MCPServerRouter extends EventEmitter {
               name: 'documentation_lookup',
               description: 'Library documentation and code examples',
               toolPatterns: ['mcp__context7'],
-              domainHints: ['documentation', 'libraries'],
+              domainHints: ['documentation', 'libraries', 'framework'],
               complexityRange: { min: 0.2, max: 0.6 },
               averageExecutionTime: 500,
               successRate: 0.90,
+            },
+          ],
+        },
+      },
+      {
+        id: 'sequential',
+        config: {
+          status: 'online',
+          responseTime: 300,
+          successRate: 0.88,
+          currentLoad: 0.5,
+          capabilities: [
+            {
+              name: 'sequential_thinking',
+              description: 'Multi-step reasoning and complex problem solving',
+              toolPatterns: ['mcp__sequential-thinking'],
+              domainHints: ['analysis', 'reasoning', 'planning', 'complex'],
+              complexityRange: { min: 0.5, max: 1.0 },
+              averageExecutionTime: 1000,
+              successRate: 0.88,
+            },
+          ],
+        },
+      },
+      {
+        id: 'magic',
+        config: {
+          status: 'online',
+          responseTime: 250,
+          successRate: 0.92,
+          currentLoad: 0.3,
+          capabilities: [
+            {
+              name: 'ui_component_generation',
+              description: 'Modern UI component generation from 21st.dev',
+              toolPatterns: ['mcp__magic'],
+              domainHints: ['ui', 'component', 'frontend', 'design'],
+              complexityRange: { min: 0.3, max: 0.8 },
+              averageExecutionTime: 600,
+              successRate: 0.92,
+            },
+          ],
+        },
+      },
+      {
+        id: 'playwright',
+        config: {
+          status: 'online',
+          responseTime: 400,
+          successRate: 0.85,
+          currentLoad: 0.2,
+          capabilities: [
+            {
+              name: 'browser_automation',
+              description: 'Browser automation and E2E testing',
+              toolPatterns: ['mcp__playwright'],
+              domainHints: ['testing', 'e2e', 'browser', 'automation'],
+              complexityRange: { min: 0.4, max: 0.9 },
+              averageExecutionTime: 2000,
+              successRate: 0.85,
             },
           ],
         },
@@ -589,18 +668,64 @@ export class MCPServerRouter extends EventEmitter {
 
   // Execution strategy implementations
   private async executeParallel(servers: MCPServerType[], context: BridgeHookContext): Promise<BridgeHookResult> {
-    const results = await this.coordinationService.executeTask(
-      'processing',
-      { context },
-      { targetServers: servers, strategy: 'parallel' }
-    );
+    const externalServers = ['context7', 'sequential', 'magic', 'playwright'] as MCPServerType[];
+    const internalServers = servers.filter(s => !externalServers.includes(s));
+    const external = servers.filter(s => externalServers.includes(s));
+
+    const promises: Promise<any>[] = [];
+
+    // Execute internal servers through coordination service
+    if (internalServers.length > 0) {
+      promises.push(
+        this.coordinationService.executeTask(
+          'processing',
+          { context },
+          { targetServers: internalServers, strategy: 'parallel' }
+        )
+      );
+    }
+
+    // Execute external servers through external manager
+    for (const serverId of external) {
+      promises.push(
+        this.executeExternalServer(serverId, context)
+          .catch(error => ({
+            success: false,
+            error: error.message,
+            serverId
+          }))
+      );
+    }
+
+    const results = await Promise.all(promises);
+    
+    // Merge results
+    const mcpResults: Record<string, any> = {};
+    let overallSuccess = true;
+    let totalDuration = 0;
+
+    for (const result of results) {
+      if (result.results) {
+        // Internal server results
+        Object.assign(mcpResults, result.results);
+      } else if (result.serverId) {
+        // External server result
+        mcpResults[result.serverId] = result;
+      }
+      
+      if (!result.success) {
+        overallSuccess = false;
+      }
+      
+      totalDuration = Math.max(totalDuration, result.executionTime || result.duration || 0);
+    }
 
     return {
-      success: results.success,
-      data: results.results,
-      mcpResults: Object.fromEntries(results.results),
+      success: overallSuccess,
+      data: mcpResults,
+      mcpResults,
       performance: {
-        duration: results.executionTime,
+        duration: totalDuration,
       },
     };
   }
@@ -739,6 +864,122 @@ export class MCPServerRouter extends EventEmitter {
   }
 
   /**
+   * Execute request on external server
+   */
+  private async executeExternalServer(
+    serverId: MCPServerType,
+    context: BridgeHookContext
+  ): Promise<any> {
+    const startTime = performance.now();
+
+    try {
+      // Map context to external server operation
+      const operation = this.mapContextToOperation(serverId, context);
+      const params = this.mapContextToParams(serverId, context);
+
+      const result = await this.externalServerManager.executeRequest(
+        serverId,
+        operation,
+        params
+      );
+
+      const duration = performance.now() - startTime;
+
+      return {
+        success: true,
+        serverId,
+        data: result,
+        duration,
+      };
+    } catch (error) {
+      const duration = performance.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      logger.error(`External server ${serverId} execution failed`, {
+        error: errorMessage,
+        duration,
+      });
+
+      return {
+        success: false,
+        serverId,
+        error: errorMessage,
+        duration,
+      };
+    }
+  }
+
+  private mapContextToOperation(serverId: MCPServerType, context: BridgeHookContext): string {
+    // Map based on tool name and server capabilities
+    const toolName = context.operation.toLowerCase();
+
+    switch (serverId) {
+      case 'context7':
+        if (toolName.includes('resolve')) return 'resolve-library-id';
+        if (toolName.includes('docs')) return 'get-library-docs';
+        return 'get-library-docs';
+
+      case 'sequential':
+        return 'sequential-thinking';
+
+      case 'magic':
+        if (toolName.includes('logo')) return 'logo-search';
+        if (toolName.includes('inspiration')) return 'component-inspiration';
+        return 'component-builder';
+
+      case 'playwright':
+        if (toolName.includes('screenshot')) return 'screenshot';
+        if (toolName.includes('navigate')) return 'navigate';
+        return 'execute';
+
+      default:
+        return 'default';
+    }
+  }
+
+  private mapContextToParams(serverId: MCPServerType, context: BridgeHookContext): any {
+    const args = context.args;
+
+    switch (serverId) {
+      case 'context7':
+        return {
+          libraryName: args.libraryName || args.library || args.name,
+          libraryId: args.libraryId || args.id,
+          tokens: args.tokens || 10000,
+          topic: args.topic,
+        };
+
+      case 'sequential':
+        return {
+          thought: args.thought || args.question || args.query,
+          context: args.context || context.sessionState,
+        };
+
+      case 'magic':
+        return {
+          searchQuery: args.searchQuery || args.query || args.component,
+          message: args.message || args.description,
+          standaloneRequestQuery: args.standaloneRequestQuery,
+          queries: args.queries || [args.query],
+          format: args.format || 'TSX',
+          absolutePathToCurrentFile: args.filePath,
+          absolutePathToProjectDirectory: args.projectPath,
+        };
+
+      case 'playwright':
+        return {
+          url: args.url,
+          selector: args.selector,
+          action: args.action,
+          options: args.options,
+        };
+
+      default:
+        return args;
+    }
+  }
+
+  /**
    * Cleanup resources
    */
   cleanup(): void {
@@ -746,6 +987,7 @@ export class MCPServerRouter extends EventEmitter {
       clearInterval(this.healthCheckInterval);
     }
     this.coordinationService.cleanup();
+    this.externalServerManager.cleanup();
     this.routingCache.clear();
     this.serverHealth.clear();
     logger.info('MCP Server Router cleanup completed');

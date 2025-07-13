@@ -12,6 +12,7 @@ export * from './registry.js';
 // Core integration components
 export { ClaudeCodeIntegration } from './core/ClaudeCodeIntegration.js';
 export { MCPServerRouter } from './core/MCPServerRouter.js';
+export { ExternalServerManager } from './core/ExternalServerManager.js';
 export { PerformanceMonitor } from './core/PerformanceMonitor.js';
 export { ContextPreservationManager } from './core/ContextPreservationManager.js';
 export { BridgeOrchestrator } from './core/BridgeOrchestrator.js';
@@ -35,6 +36,19 @@ import type {
  */
 export function createSuperClaudeBridge(config?: Partial<BridgeHookConfig>) {
   const registry = new BridgeHookRegistry(config);
+  
+  // Load external server configuration from mcp-servers.json if available
+  let externalServerConfig;
+  try {
+    const mcpServersPath = process.env.MCP_SERVERS_CONFIG || '/home/anton/SuperClaude_MCP/MCP_Servers/mcp-servers.json';
+    if (require('fs').existsSync(mcpServersPath)) {
+      const mcpConfig = JSON.parse(require('fs').readFileSync(mcpServersPath, 'utf8'));
+      externalServerConfig = mcpConfig.mcpServers;
+    }
+  } catch (error) {
+    logger.warn('Failed to load external MCP server configuration', { error });
+  }
+
   const orchestrator = new BridgeOrchestrator({
     performanceTargetMs: config?.performanceTarget || 100,
     maxConcurrentOperations: config?.maxConcurrentHooks || 10,
@@ -44,6 +58,7 @@ export function createSuperClaudeBridge(config?: Partial<BridgeHookConfig>) {
     enableContextPreservation: config?.claudeCodeIntegration?.sessionTrackingEnabled !== false,
     enableIntelligentCaching: config?.enableCaching !== false,
     enablePredictiveOptimization: true,
+    externalServerConfig: externalServerConfig || config?.mcpRouting?.externalServers,
   });
 
   // Register default hooks for common operations

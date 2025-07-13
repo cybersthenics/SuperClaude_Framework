@@ -7,10 +7,9 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { ComplexityEstimator } from './core/ComplexityEstimator.js';
 import { PerformanceProfiler } from './core/PerformanceProfiler.js';
 import { CrossServerPerformanceOptimizer } from './core/CrossServerPerformanceOptimizer.js';
-import { logger } from '@superclaude/shared';
+import { logger, ComplexityAnalysisService } from '@superclaude/shared';
 import {
   EstimateComplexityInputSchema,
   MonitorPerformanceInputSchema,
@@ -38,7 +37,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export class SuperClaudePerformanceServer {
   private server: Server;
-  private complexityEstimator: ComplexityEstimator;
+  private complexityService: ComplexityAnalysisService;
   private performanceProfiler: PerformanceProfiler;
   private crossServerOptimizer: CrossServerPerformanceOptimizer;
   private operationHistory: Map<string, any[]> = new Map();
@@ -57,7 +56,7 @@ export class SuperClaudePerformanceServer {
       }
     );
 
-    this.complexityEstimator = new ComplexityEstimator();
+    this.complexityService = new ComplexityAnalysisService();
     this.performanceProfiler = new PerformanceProfiler();
     this.crossServerOptimizer = new CrossServerPerformanceOptimizer();
 
@@ -829,7 +828,7 @@ export class SuperClaudePerformanceServer {
   // ==================== COMPLEXITY ESTIMATION HANDLERS ====================
 
   private async handleEstimateComplexity(args: any): Promise<ComplexityEstimationResult> {
-    const estimation = await this.complexityEstimator.estimateComplexity(
+    const estimation = await this.complexityService.analyzeComplexity(
       args.target,
       args.type || 'file',
       {
@@ -857,7 +856,7 @@ export class SuperClaudePerformanceServer {
   }
 
   private async handleAnalyzeFileComplexity(args: any): Promise<ComplexityEstimationResult> {
-    const metrics = await this.complexityEstimator.analyzeFileComplexity(args.filePath, args.content);
+    const metrics = await this.complexityService.calculateMetrics(args.content, args.language || 'javascript');
 
     // Filter metrics if specific ones were requested
     const requestedMetrics = args.metrics || ['cyclomatic', 'cognitive', 'nesting', 'maintainability', 'testability'];
@@ -886,7 +885,7 @@ export class SuperClaudePerformanceServer {
     let baseline = null;
 
     for (const target of args.targets) {
-      const estimation = await this.complexityEstimator.estimateComplexity(
+      const estimation = await this.complexityService.analyzeComplexity(
         target,
         args.type || 'file'
       );
@@ -1409,9 +1408,9 @@ export class SuperClaudePerformanceServer {
       uptime: Date.now() - this.startTime,
       memoryUsage: process.memoryUsage(),
       components: {
-        complexityEstimator: {
+        complexityService: {
           status: 'healthy',
-          cacheStats: args.includeCache ? this.complexityEstimator.getCacheStats() : undefined
+          cacheStats: args.includeCache ? this.complexityService.getCacheStats() : undefined
         },
         performanceProfiler: {
           status: 'healthy',
@@ -1433,7 +1432,7 @@ export class SuperClaudePerformanceServer {
 
   private async handleGetServerStats(args: any): Promise<MCPToolResult> {
     const stats = {
-      complexityEstimator: this.complexityEstimator.getCacheStats(),
+      complexityService: this.complexityService.getCacheStats(),
       performanceProfiler: this.performanceProfiler.getStats(),
       crossServerOptimizer: this.crossServerOptimizer.getPerformanceStats(),
       operationHistory: this.getOperationHistoryStats(),
@@ -1456,7 +1455,7 @@ export class SuperClaudePerformanceServer {
 
     switch (args.type || 'all') {
       case 'complexity':
-        this.complexityEstimator.clearCache();
+        this.complexityService.clearCache();
         cleared++;
         break;
       case 'performance':
@@ -1468,7 +1467,7 @@ export class SuperClaudePerformanceServer {
         cleared++;
         break;
       case 'all':
-        this.complexityEstimator.clearCache();
+        this.complexityService.clearCache();
         this.performanceProfiler.cleanup();
         this.crossServerOptimizer.clearCache();
         cleared = 3;
@@ -1721,7 +1720,7 @@ export class SuperClaudePerformanceServer {
   private summarizeStats(detailedStats: any): any {
     return {
       overview: {
-        complexityEstimatorCaches: detailedStats.complexityEstimator.metricsCache,
+        complexityServiceCaches: detailedStats.complexityEstimator.metricsCache,
         performanceProfilerTargets: detailedStats.performanceProfiler.activeTargets,
         crossServerConnections: detailedStats.crossServerOptimizer.totalServers,
         totalOperations: Object.keys(detailedStats.operationHistory).length
@@ -1819,7 +1818,7 @@ export class SuperClaudePerformanceServer {
       try {
         // Cleanup all components
         this.performanceProfiler.cleanup();
-        this.complexityEstimator.clearCache();
+        this.complexityService.clearCache();
         this.crossServerOptimizer.clearCache();
         
         logger.info('SuperClaude Performance server shutdown completed');

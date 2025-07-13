@@ -1,0 +1,83 @@
+{
+  "mcpServers": {
+    "context7": {
+      "url": "https://api.context7.com/v1",
+      "apiKey": "${CONTEXT7_API_KEY}",
+      "timeout": 5000,
+      "retries": 3,
+      "fallbackToInternal": true,
+      "capabilities": ["documentation", "library-lookup", "code-examples"]
+    },
+    "sequential": {
+      "endpoint": "ws://sequential.local:8080",
+      "protocol": "websocket", 
+      "auth": "bearer ${SEQUENTIAL_TOKEN}",
+      "timeout": 10000,
+      "retries": 2,
+      "fallbackToInternal": true,
+      "capabilities": ["complex-analysis", "multi-step-reasoning", "problem-solving"]
+    },
+    "magic": {
+      "baseUrl": "https://21st.dev/api",
+      "headers": {
+        "X-API-Key": "${MAGIC_API_KEY}"
+      },
+      "timeout": 5000,
+      "retries": 3,
+      "fallbackToInternal": true,
+      "capabilities": ["ui-generation", "component-design", "design-system"]
+    },
+    "playwright": {
+      "mode": "local",
+      "executable": "/usr/local/bin/playwright",
+      "browserContextOptions": {
+        "headless": true,
+        "viewport": {"width": 1920, "height": 1080}
+      },
+      "timeout": 30000,
+      "fallbackToInternal": false,
+      "capabilities": ["browser-automation", "e2e-testing", "visual-testing"]
+    }
+  },
+  "internalServers": {
+    "superclaude-code": {
+      "endpoint": "http://localhost:3001",
+      "capabilities": ["code-analysis", "lsp", "symbol-extraction"]
+    },
+    "superclaude-intelligence": {
+      "endpoint": "http://localhost:3002", 
+      "capabilities": ["decision-making", "knowledge-graph", "reasoning"]
+    },
+    "superclaude-orchestrator": {
+      "endpoint": "http://localhost:3003",
+      "capabilities": ["wave-management", "workflow-coordination", "circuit-breaker"]
+    },
+    "superclaude-performance": {
+      "endpoint": "http://localhost:3004",
+      "capabilities": ["performance-profiling", "optimization", "metrics"]
+    },
+    "superclaude-quality": {
+      "endpoint": "http://localhost:3005",
+      "capabilities": ["validation", "quality-gates", "code-review"]
+    },
+    "superclaude-tasks": {
+      "endpoint": "http://localhost:3006",
+      "capabilities": ["task-management", "decomposition", "planning"]
+    },
+    "superclaude-ui": {
+      "endpoint": "http://localhost:3007",
+      "capabilities": ["ui-components", "accessibility", "responsive-design"]
+    }
+  },
+  "circuitBreaker": {
+    "errorThreshold": 5,
+    "resetTimeout": 60000,
+    "monitoringPeriod": 10000,
+    "fallbackStrategy": "use-internal-server"
+  },
+  "loadBalancing": {
+    "strategy": "least-loaded",
+    "healthCheckInterval": 30000,
+    "maxConcurrentRequests": 10
+  }
+}

@@ -454,25 +454,78 @@ Resource management, operation batching, and intelligent optimization for sub-10
 - **Detection Engine**: 1-2K tokens for pattern analysis
 - **Decision Trees**: 500-1K tokens for routing logic
 - **MCP Coordination**: Variable based on servers activated
+- **External Server Buffer**: 2-5K tokens for latency compensation
+
+**External Server Performance Optimization**:
+- **Connection Pooling**: Maintain warm connections to frequently used servers
+- **Request Batching**: Combine multiple requests when possible
+- **Predictive Caching**: Pre-fetch likely documentation based on patterns
+- **Parallel Fallback**: Start internal server in parallel for critical operations
+- **Latency-Aware Routing**: Route time-sensitive requests to faster servers
+- **Progressive Enhancement**: Start with cached/internal, enhance with external
 
 
 ## 🔗 Integration Intelligence
 
-Smart MCP server selection and orchestration.
+Smart MCP server selection and orchestration for 11 servers (7 internal + 4 external).
 
 ### MCP Server Selection Matrix
 **Reference**: See MCP.md for detailed server capabilities, workflows, and integration patterns.
 
+**Server Architecture**:
+- **Internal Servers (7)**: code, intelligence, orchestrator, performance, quality, tasks, ui
+- **External Servers (4)**: Context7, Sequential, Magic, Playwright
+
 **Quick Selection Guide**:
-- **Context7**: Library docs, framework patterns
-- **Sequential**: Complex analysis, multi-step reasoning
-- **Magic**: UI components, design systems
-- **Playwright**: E2E testing, performance metrics
+- **Context7** (External): Library docs, framework patterns | Latency: 50-500ms
+- **Sequential** (External): Complex analysis, multi-step reasoning | Latency: 100-1000ms
+- **Magic** (External): UI components, design systems | Latency: 50-500ms
+- **Playwright** (External/Local): E2E testing, performance metrics | Latency: 10-30000ms
 
 ### Intelligent Server Coordination
 **Reference**: See MCP.md for complete server orchestration patterns and fallback strategies.
 
-**Core Coordination Logic**: Multi-server operations, fallback chains, resource optimization
+**Core Coordination Logic**: 
+- **Hybrid Operation**: Prioritize external servers when healthy, fallback to internal
+- **Circuit Breaker**: Open after 5 failures, auto-recovery after 60s
+- **Health Monitoring**: Every 30s health checks, predictive failure detection
+- **Latency Budget**: 500ms p95 for external calls, 100ms for internal
+
+**External Server Integration**:
+```yaml
+external_servers:
+  context7:
+    endpoint: "https://api.context7.com/v1"
+    auth: "Bearer ${CONTEXT7_API_KEY}"
+    timeout: 5000ms
+    circuit_breaker: 
+      failure_threshold: 5
+      recovery_time: 60s
+    fallback: internal.superclaude-code
+    
+  sequential:
+    endpoint: "ws://sequential.local:8080"
+    auth: "Bearer ${SEQUENTIAL_TOKEN}"
+    timeout: 10000ms
+    circuit_breaker:
+      failure_threshold: 5
+      recovery_time: 60s
+    fallback: internal.superclaude-intelligence
+    
+  magic:
+    endpoint: "https://21st.dev/api"
+    auth: "API Key ${MAGIC_API_KEY}"
+    timeout: 5000ms
+    circuit_breaker:
+      failure_threshold: 5
+      recovery_time: 60s
+    fallback: internal.superclaude-ui
+    
+  playwright:
+    mode: local_executable | remote_browser
+    timeout: 30000ms
+    fallback: manual_test_generation
+```
 
 ### Persona Integration
 **Reference**: See PERSONAS.md for detailed persona specifications and MCP server preferences.
@@ -494,6 +547,13 @@ Threshold-based resource management follows the unified Resource Management Thre
 - **Token Limit**: Activate compression
 - **Tool Failure**: Try alternative tool
 - **Parse Error**: Request clarification
+- **External Server Failures**:
+  - **Context7 Down**: Fallback to internal code server + WebSearch
+  - **Sequential Timeout**: Use internal intelligence server (reduced capability)
+  - **Magic API Error**: Generate basic components with internal UI server
+  - **Playwright Connection Lost**: Provide manual test scripts
+  - **Circuit Breaker Open**: Route to internal servers for 60s
+  - **Auth Failure**: Alert user to check API keys in .env file
 
 
 
@@ -518,6 +578,21 @@ orchestrator_config:
   token_reserve: 10%
   emergency_threshold: 90%
   compression_threshold: 75%
+  
+  # External Server Settings
+  external_servers:
+    enable_hybrid_mode: true
+    health_check_interval: 30s
+    circuit_breaker:
+      failure_threshold: 5
+      recovery_timeout: 60s
+      half_open_requests: 3
+    connection_pool:
+      size: 10
+      idle_timeout: 300s
+    fallback_strategy: graceful
+    cache_external_responses: true
+    cache_ttl: 300s
   
   # Wave Mode Settings
   wave_mode:

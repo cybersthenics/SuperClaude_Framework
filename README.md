@@ -1,8 +1,8 @@
-# SuperClaude Framework v3.0
+# SuperClaude MCP (Model Context Protocol) v3.0
 
-A modular enhancement framework for Claude Code that adds orchestration, quality assurance, and advanced capabilities through a hook-based architecture.
+A modern MCP implementation for SuperClaude, featuring a hybrid architecture with 7 internal servers and 4 external server integrations. This replaces the legacy 15-hook system with a scalable, high-performance architecture.
 
-*WORK IN PROGRESS*
+**Migration Status**: Phase 5/6 Complete - Ready for deployment testing
 
 ## Why SuperClaude v3?
 
@@ -32,42 +32,82 @@ The framework evolved to address several needs:
 
 ## Installation
 
-Work in progress
+### Quick Start
 
-## Hook System Implementation
+```bash
+# Clone the repository
+git clone https://github.com/user/SuperClaude_MCP.git
+cd SuperClaude_MCP
 
-The framework uses 15 Python hooks that intercept Claude Code events:
+# Run the deployment script
+./deploy.sh
 
-### Core Infrastructure Hooks
-- `wave_coordinator.py` - Manages wave orchestration lifecycle
-- `performance_monitor.py` - Tracks execution metrics in real-time
-- `context_accumulator.py` - Manages context across operations
-- `error_handler.py` - Provides graceful error recovery
-- `hook_registry.py` - Manages hook lifecycle and dependencies
+# Configure environment (add your API keys)
+cp .env.example .env
+nano .env
 
-### Feature Hooks
-- `mcp_coordinator.py` - Integrates MCP servers (Context7, Sequential, Magic, Playwright)
-- `task_manager.py` - Enhanced task lifecycle management
-- `token_optimizer.py` - Intelligent token usage optimization
-- `agent_manager.py` - Sub-agent lifecycle and coordination
+# Start monitoring
+./monitor.sh
+```
 
-### Quality Hooks
-- `quality_validator.py` - Enforces quality gates
-- `quality_gates_coordinator.py` - 8-step validation cycle
-- `result_collector.py` - Aggregates and validates results
-- `synthesis_engine.py` - Generates compound intelligence
+### Manual Installation
 
-Hooks are configured in `settings.json` and respond to events:
-- `PreToolUse` - Before any tool executes
-- `PostToolUse` - After tool completion
-- `SubagentStop` - When sub-agents complete
-- `Stop` - Session end
-- `Notification` - System notifications
+1. **Install Dependencies**:
+   ```bash
+   # Python dependencies
+   cd SuperClaude/Hooks
+   ./setup.sh
+   
+   # Node dependencies
+   cd ../../MCP_Servers/bridge-hooks
+   npm install
+   npm run build
+   ```
 
-# Install MCP servers globally
-python Scripts/install_mcp_servers.py
+2. **Configure Claude Code**:
+   ```bash
+   ln -sf $(pwd)/SuperClaude/Hooks/config.json ~/.claude/hooks/config.json
+   ```
 
-Servers auto-activate based on task context or can be manually controlled with flags.
+3. **Start Services**:
+   ```bash
+   cd MCP_Servers/bridge-hooks
+   npm run server
+   ```
+
+## MCP Architecture Implementation
+
+The framework now uses a modern MCP (Model Context Protocol) architecture:
+
+### Server Architecture (11 Total)
+
+**Internal Servers (7)**:
+- `superclaude-code` - Code analysis and generation
+- `superclaude-intelligence` - Complex reasoning and analysis
+- `superclaude-orchestrator` - Task routing and coordination
+- `superclaude-performance` - Performance optimization
+- `superclaude-quality` - Code quality and testing
+- `superclaude-tasks` - Task management
+- `superclaude-ui` - UI component generation
+
+**External Servers (4)**:
+- **Context7** - Official library documentation and patterns
+- **Sequential** - Multi-step problem solving and analysis
+- **Magic** - Modern UI component generation (21st.dev)
+- **Playwright** - Browser automation and E2E testing
+
+### Hook System (Simplified to 3)
+
+Python-based hooks that intercept Claude Code operations:
+- `pre_tool_use.py` - Validates and routes operations to appropriate MCP servers
+- `post_tool_use.py` - Processes results and triggers quality gates
+- `notification.py` - Handles permissions and system notifications
+
+### Key Features
+- **Circuit Breaker Pattern**: Graceful degradation when external services fail
+- **Intelligent Routing**: Automatic server selection based on task complexity
+- **Performance Optimization**: Sub-100ms hook execution with intelligent caching
+- **Hybrid Operation**: Seamless fallback from external to internal servers
 
 ## Command Consolidation
 
@@ -92,32 +132,65 @@ Streamlined from 20+ commands to 14 essential ones:
 
 ## Configuration
 
-### Global Settings
-The framework installs to `~/.claude/` with:
-- `settings.json` - Required settings
-- `hooks/` - All Python hooks
-- `commands/` - Slash commands
-- Core markdown files (COMMANDS.md, FLAGS.md, etc.)
+### Environment Variables
+Configure in `.env` file:
+```bash
+# External server API keys
+CONTEXT7_API_KEY=your-api-key
+SEQUENTIAL_TOKEN=your-token
+MAGIC_API_KEY=your-api-key
+
+# Performance settings
+MCP_TIMEOUT_MS=5000
+CIRCUIT_BREAKER_THRESHOLD=5
+```
+
+### Hook Configuration
+The framework uses `~/.claude/hooks/config.json` for Claude Code integration.
 
 ### Customization
-Edit `settings.json` to:
-- Enable/disable specific hooks
-- Configure MCP servers
-- Set performance thresholds
-- Customize wave behavior
-- Define custom routing rules
+- Edit `MCP_Servers/mcp-servers.json` for external server settings
+- Modify `SuperClaude/Core/*.md` files for framework behavior
+- Adjust orchestrator settings in `ORCHESTRATOR.md`
+
+## Testing
+
+```bash
+# Run all tests
+./run-integration-tests.sh
+
+# Test specific components
+python3 SuperClaude/Hooks/test_hooks.py
+python3 Tests/test_external_servers.py
+python3 Tests/test_circuit_breaker.py
+```
+
+## Monitoring
+
+```bash
+# Real-time health monitoring
+./monitor.sh
+
+# Check service health
+curl http://localhost:8080/health
+
+# View MCP server status
+curl http://localhost:8080/mcp-status
+```
 
 ## Roadmap
 
-### In Progress
-- Modular installation script for feature selection
-- Comprehensive test battery for each component
-- Wiki and user guides
+### Phase 6: Optimization & Polish (Next)
+- Performance tuning for sub-50ms hook execution
+- Enhanced caching strategies
+- Improved error messages
+- Comprehensive documentation
 
-### Planned Improvements
-- Further leverage of hooks system for extensibility
-- Reduce framework complexity where possible
+### Future Enhancements
+- Additional external server integrations
 - Cross-CLI compatibility layer
+- Plugin system for custom servers
+- Advanced monitoring dashboard
 
 ## Contributing
 

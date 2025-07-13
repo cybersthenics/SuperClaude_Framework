@@ -653,7 +653,7 @@ export class ComplexityAnalysisService {
 
   private getLanguageConfig(language: string): LanguageConfig {
     return ComplexityAnalysisService.LANGUAGE_CONFIGS[language] 
-      || ComplexityAnalysisService.LANGUAGE_CONFIGS.javascript;
+      || ComplexityAnalysisService.LANGUAGE_CONFIGS.javascript!;
   }
 
   private getCacheKey(target: string, type: AnalysisTarget, options: AnalysisOptions): string {

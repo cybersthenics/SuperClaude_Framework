@@ -28,6 +28,7 @@ export interface BridgeOrchestratorOptions {
   maxConcurrentOperations: number;
   enableIntelligentCaching: boolean;
   enablePredictiveOptimization: boolean;
+  externalServerConfig?: any; // External server configuration
 }
 
 /**
@@ -262,7 +263,7 @@ export class BridgeOrchestrator extends EventEmitter {
           warning: this.options.performanceTargetMs * 1.5,
           critical: this.options.performanceTargetMs * 2
         },
-      });
+      }, this.options.externalServerConfig);
     }
 
     // Initialize performance monitor

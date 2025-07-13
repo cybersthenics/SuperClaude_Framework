@@ -7,9 +7,8 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { ValidationFramework } from './core/ValidationFramework.js';
-import { SemanticAnalysisEngine } from './core/SemanticAnalysisEngine.js';
 import { CrossServerOptimizer } from './core/CrossServerOptimizer.js';
+import { UnifiedValidationService, SemanticAnalysisService } from '@superclaude/shared';
 import {
   ValidationStep,
   QualityLevel,
@@ -33,8 +32,8 @@ import {
  */
 export class SuperClaudeQualityServer {
   private server: Server;
-  private validationFramework: ValidationFramework;
-  private semanticEngine: SemanticAnalysisEngine;
+  private validationService: UnifiedValidationService;
+  private semanticService: SemanticAnalysisService;
   private crossServerOptimizer: CrossServerOptimizer;
   private metricsHistory: QualityMetrics[] = [];
 
@@ -51,8 +50,8 @@ export class SuperClaudeQualityServer {
       }
     );
 
-    this.validationFramework = new ValidationFramework();
-    this.semanticEngine = new SemanticAnalysisEngine();
+    this.validationService = new UnifiedValidationService();
+    this.semanticService = new SemanticAnalysisService();
     this.crossServerOptimizer = new CrossServerOptimizer();
 
     this.setupToolHandlers();
@@ -534,12 +533,12 @@ export class SuperClaudeQualityServer {
       };
     }
 
-    const results = await this.validationFramework.validateFile(input);
+    const results = await this.validationService.validateFile(input);
     
     // Include semantic analysis if requested
     let semanticAnalysis = null;
     if (input.semanticAnalysis) {
-      semanticAnalysis = await this.semanticEngine.analyzeFile({
+      semanticAnalysis = await this.semanticService.analyzeCode({
         filePath: input.filePath,
         content: input.content,
         language: input.language
@@ -586,7 +585,7 @@ export class SuperClaudeQualityServer {
       maxConcurrency: args.maxConcurrency || 5
     };
 
-    const results = await this.validationFramework.validateProject(
+    const results = await this.validationService.validateProject(
       input.projectPath,
       {
         includePaths: input.includePaths,
@@ -662,7 +661,7 @@ export class SuperClaudeQualityServer {
       };
     }
 
-    const analysis = await this.semanticEngine.analyzeFile(input);
+    const analysis = await this.semanticService.analyzeCode(input);
     
     // Cache the analysis
     await this.crossServerOptimizer.cacheSemanticAnalysis(input.filePath, analysis);
@@ -683,7 +682,7 @@ export class SuperClaudeQualityServer {
   }
 
   private async handleExtractSymbols(args: any): Promise<MCPToolResult> {
-    const analysis = await this.semanticEngine.analyzeFile({
+    const analysis = await this.semanticService.analyzeCode({
       filePath: args.filePath,
       content: args.content,
       language: args.language
@@ -709,7 +708,7 @@ export class SuperClaudeQualityServer {
   }
 
   private async handleAnalyzeComplexity(args: any): Promise<MCPToolResult> {
-    const analysis = await this.semanticEngine.analyzeFile({
+    const analysis = await this.semanticService.analyzeCode({
       filePath: args.filePath,
       content: args.content,
       language: args.language
