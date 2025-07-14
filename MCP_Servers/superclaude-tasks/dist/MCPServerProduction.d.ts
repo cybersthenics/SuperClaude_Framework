@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+export declare class SuperClaudeTasksServerProduction {
+    private server;
+    private taskManager;
+    private memoryManager;
+    private contextPreserver;
+    private subAgentCoordinator;
+    private workflowOrchestrator;
+    private superClaudeIntegration;
+    private performanceOptimizer;
+    private errorRecoverySystem;
+    private healthMonitor;
+    private shutdownHandler;
+    constructor();
+    private setupHandlers;
+    private handleCreateTask;
+    private handleGetTask;
+    private handleSearchTasks;
+    private handleGetTaskStats;
+    private handleCreateProjectMemory;
+    private handleCreateContextSnapshot;
+    private handleRegisterAgent;
+    private handleDistributeToSubAgents;
+    private handleCoordinateWorkflow;
+    private handleMakeCrossServerRequest;
+    private handleGetServerHealth;
+    private handleGetPerformanceMetrics;
+    private handleGetSystemHealth;
+    private handleGetErrorStatistics;
+    private handleAcknowledgeAlert;
+    private handleGenerateSystemReport;
+    private handleClearCaches;
+    private handleGetSystemHealthResource;
+    private handleGetSystemMetricsResource;
+    private handleGetSystemLogsResource;
+    private handleGetSystemAlertsResource;
+    private handleGetIntegrationServersResource;
+    private handleGetCoordinationWorkflowsResource;
+    private generateCorrelationId;
+    private setupGracefulShutdown;
+    run(): Promise<void>;
+}
+//# sourceMappingURL=MCPServerProduction.d.ts.map

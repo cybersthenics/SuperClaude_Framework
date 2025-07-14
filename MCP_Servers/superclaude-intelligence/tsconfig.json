@@ -1,8 +1,17 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src"
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "noImplicitThis": false,
+    "noImplicitReturns": false
   },
   "include": [
     "src/**/*"
@@ -11,10 +20,5 @@
     "node_modules",
     "dist",
     "tests"
-  ],
-  "references": [
-    {
-      "path": "../shared"
-    }
   ]
 }

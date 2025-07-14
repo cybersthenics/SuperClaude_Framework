@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+export declare class ProductionIntelligenceServer {
+    private server;
+    private lspManager;
+    private analysisCache;
+    private serverMetrics;
+    constructor();
+    private setupHandlers;
+    private analyzeCodeFile;
+    private findSymbolDefinition;
+    private findSymbolReferences;
+    private getCodeCompletions;
+    private getHoverInformation;
+    private validateSyntax;
+    private extractSymbols;
+    private analyzeCodeComplexity;
+    private getIntelligenceStatus;
+    private getLanguageFromPath;
+    private getCodePreview;
+    private getCodeContext;
+    private getCompletionContext;
+    private getWordRangeAtPosition;
+    private summarizeSymbols;
+    private summarizeDiagnostics;
+    private calculateComplexityMetrics;
+    private calculateCyclomaticComplexity;
+    private calculateCognitiveComplexity;
+    private calculateMaintainabilityIndex;
+    private analyzeCodePatterns;
+    private extractDependencies;
+    private filterDiagnosticsBySeverity;
+    private severityToString;
+    private symbolKindToString;
+    private filterSymbolsByType;
+    private calculateSymbolStatistics;
+    private filterComplexityMetrics;
+    private generateComplexityRecommendations;
+    private groupReferencesByFile;
+    private detectCommonPatterns;
+    private detectAntiPatterns;
+    private generatePatternSuggestions;
+    private calculateCacheHitRate;
+    private estimateCacheMemoryUsage;
+    private getServerStatus;
+    private getAnalysisCache;
+    private getSupportedLanguages;
+    start(): Promise<void>;
+    stop(): Promise<void>;
+}
+//# sourceMappingURL=ProductionServer.d.ts.map

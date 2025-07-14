@@ -1,0 +1,46 @@
+import { HookType, HookContext, HookResult, BridgeServiceStatus, HealthCheckResult } from '../types/index.js';
+import { BaseHook } from './BaseHook.js';
+export declare class BridgeService {
+    private server?;
+    private hooks;
+    private connections;
+    private pendingRequests;
+    private performanceTracker;
+    private serviceStatus;
+    private responseCache;
+    private readonly config;
+    private readonly jwtSecret;
+    constructor(jwtSecret?: string);
+    startService(port?: number): Promise<void>;
+    stopService(): Promise<void>;
+    getServiceStatus(): Promise<BridgeServiceStatus>;
+    registerHook(hook: BaseHook): Promise<void>;
+    unregisterHook(hookType: HookType): Promise<void>;
+    executeHook(hookType: HookType, context: HookContext): Promise<HookResult>;
+    healthCheck(): Promise<HealthCheckResult>;
+    private setupServerHandlers;
+    private handleConnection;
+    private handleMessage;
+    private handleHookRequest;
+    private handlePerformanceQuery;
+    private handleHealthCheck;
+    private authenticateConnection;
+    private generateConnectionId;
+    private generateCacheKey;
+    private optimizeContext;
+    private calculateCacheHitRate;
+    private parseMessage;
+    private sendMessage;
+    private sendError;
+    private sendConnectionConfirmation;
+    private handleDisconnection;
+    private handleConnectionError;
+    private setupHealthChecks;
+    private checkWebSocketServer;
+    private checkHookRegistrations;
+    private checkPerformanceMetrics;
+    private checkCacheHealth;
+    private updateHookMetrics;
+    private getPerformanceMetrics;
+}
+//# sourceMappingURL=BridgeService.d.ts.map

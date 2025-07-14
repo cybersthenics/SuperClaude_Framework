@@ -1,0 +1,42 @@
+import { AgentId, SubAgentInfo, WorkflowExecution, CoordinationMetrics, DistributeToSubAgentsRequest, DistributeToSubAgentsResult } from '../types/working.js';
+export declare class SubAgentCoordinator {
+    private logger;
+    private agents;
+    private activeWorkflows;
+    private coordinationMetrics;
+    private maxConcurrency;
+    private heartbeatInterval;
+    constructor(maxConcurrency?: number, heartbeatInterval?: number);
+    registerAgent(agentInfo: Omit<SubAgentInfo, 'lastHeartbeat'>): Promise<void>;
+    unregisterAgent(agentId: AgentId): Promise<void>;
+    updateAgentStatus(agentId: AgentId, status: SubAgentInfo['status']): Promise<void>;
+    getAvailableAgents(): SubAgentInfo[];
+    getAgentsByCapability(capability: string): SubAgentInfo[];
+    distributeTask(request: DistributeToSubAgentsRequest): Promise<DistributeToSubAgentsResult>;
+    private createDistributionPlan;
+    private selectAgentsByStrategy;
+    private selectByCapabilities;
+    private selectByLoadBalancing;
+    private selectByAutoStrategy;
+    private calculateAgentScore;
+    private createSubTaskDistributions;
+    private calculateAutoEffort;
+    private createResourceAllocations;
+    private createFallbackPlan;
+    private calculateEstimatedCompletion;
+    private createWorkflowExecution;
+    private startWorkflowExecution;
+    private simulateWorkflowProgress;
+    private cancelAgentTasks;
+    private updateCoordinationMetrics;
+    private updateMetricsTimestamp;
+    getCoordinationMetrics(): CoordinationMetrics;
+    getActiveWorkflows(): WorkflowExecution[];
+    getWorkflowExecution(workflowId: string): WorkflowExecution | undefined;
+    private initializeMetrics;
+    private startHeartbeatMonitor;
+    private checkAgentHeartbeats;
+    agentHeartbeat(agentId: AgentId): Promise<void>;
+    shutdown(): Promise<void>;
+}
+//# sourceMappingURL=SubAgentCoordinator.d.ts.map

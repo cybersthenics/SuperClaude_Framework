@@ -17,12 +17,6 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 
 **Purpose**: Official library documentation, code examples, best practices, localization standards
 
-**Connection Details**:
-- **Endpoint**: `https://api.context7.com/v1`
-- **Authentication**: Bearer token via `CONTEXT7_API_KEY` environment variable
-- **Timeout**: 5000ms
-- **Fallback**: Internal `superclaude-code` server for basic documentation
-
 **Activation Patterns**: 
 - Automatic: External library imports detected, framework-specific questions, scribe persona active
 - Manual: `--c7`, `--context7` flags
@@ -49,12 +43,6 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 ## Sequential Integration (Complex Analysis & Thinking)
 
 **Purpose**: Multi-step problem solving, architectural analysis, systematic debugging
-
-**Connection Details**:
-- **Endpoint**: `ws://sequential.local:8080` (WebSocket) or HTTP fallback
-- **Authentication**: Bearer token via `SEQUENTIAL_TOKEN` environment variable
-- **Timeout**: 10000ms
-- **Fallback**: Internal `superclaude-intelligence` server
 
 **Activation Patterns**:
 - Automatic: Complex debugging scenarios, system design questions, `--think` flags
@@ -89,12 +77,6 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 ## Magic Integration (UI Components & Design)
 
 **Purpose**: Modern UI component generation, design system integration, responsive design
-
-**Connection Details**:
-- **Endpoint**: `https://21st.dev/api`
-- **Authentication**: API key via `MAGIC_API_KEY` environment variable
-- **Timeout**: 5000ms
-- **Fallback**: Internal `superclaude-ui` server for basic components
 
 **Activation Patterns**:
 - Automatic: UI component requests, design system queries
@@ -131,13 +113,6 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 ## Playwright Integration (Browser Automation & Testing)
 
 **Purpose**: Cross-browser E2E testing, performance monitoring, automation, visual testing
-
-**Connection Details**:
-- **Mode**: Local executable (default) or remote browser
-- **Executable**: `/usr/local/bin/playwright` or custom path
-- **Browser Options**: Headless by default, configurable viewport
-- **Timeout**: 30000ms for browser operations
-- **Fallback**: Manual test case generation when unavailable
 
 **Activation Patterns**:
 - Automatic: Testing workflows, performance monitoring requests, E2E test generation
@@ -247,67 +222,4 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 - Graceful Fallback: Fallback gracefully when servers unavailable
 - Loop Integration: Sequential for iterative analysis, Context7 for improvement patterns
 - Dependency Orchestration: Manage inter-server dependencies and data flow
-
-## External Server Configuration
-
-**Configuration File**: `/home/anton/SuperClaude_MCP/MCP_Servers/mcp-servers.json`
-
-**Environment Variables Required**:
-```bash
-CONTEXT7_API_KEY=your-context7-api-key
-SEQUENTIAL_TOKEN=your-sequential-token
-MAGIC_API_KEY=your-magic-api-key
-BRIDGE_HOOKS_URL=http://localhost:8080
-```
-
-**Health Monitoring**:
-- Health checks every 30 seconds
-- Circuit breaker opens after 5 consecutive failures
-- Auto-recovery after 60 seconds
-- Fallback to internal servers when external unavailable
-
-**Performance Targets**:
-- External server response: <500ms p95
-- Circuit breaker decision: <10ms
-- Fallback activation: <100ms
-- End-to-end with external: <1s
-
-## Troubleshooting External Servers
-
-### Context7 Connection Issues
-1. Verify API key is set: `echo $CONTEXT7_API_KEY`
-2. Test connection: `curl -H "Authorization: Bearer $CONTEXT7_API_KEY" https://api.context7.com/v1/health`
-3. Check firewall rules for HTTPS outbound
-4. Monitor circuit breaker status in bridge logs
-
-### Sequential WebSocket Issues
-1. Ensure WebSocket support in network
-2. Try HTTP fallback mode if WebSocket fails
-3. Check token expiration
-4. Verify endpoint accessibility
-
-### Magic API Issues
-1. Validate API key format
-2. Check rate limits (usually 100 req/min)
-3. Monitor response times
-4. Use fallback for basic components
-
-### Playwright Local Issues
-1. Install Playwright: `npx playwright install`
-2. Check executable permissions
-3. Verify browser dependencies
-4. Use remote mode for containers
-
-## Hybrid Operation Mode
-
-**Intelligent Routing**: System automatically routes to best available server
-- Priority 1: External server if available and healthy
-- Priority 2: Internal server with similar capabilities
-- Priority 3: Orchestrator server as universal fallback
-
-**Performance Optimization**:
-- Cache external server responses for 5 minutes
-- Batch requests when possible
-- Use predictive routing based on patterns
-- Pre-warm connections during idle time
 

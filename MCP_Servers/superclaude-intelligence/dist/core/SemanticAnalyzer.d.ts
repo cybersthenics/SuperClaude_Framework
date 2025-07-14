@@ -1,0 +1,46 @@
+import { Position, Location } from 'vscode-languageserver-protocol';
+import { SemanticContext, SemanticAnalysisResult, SymbolInformation, TypeInformation, ReferenceAnalysis } from '../types/index.js';
+import { LSPManager } from './LSPManager.js';
+import { SymbolIndexer } from './SymbolIndexer.js';
+export declare class SemanticAnalyzer {
+    private lspManager;
+    private symbolIndexer;
+    private cacheManager;
+    private analysisCache;
+    constructor(lspManager: LSPManager, symbolIndexer: SymbolIndexer);
+    analyzeCode(context: SemanticContext): Promise<SemanticAnalysisResult>;
+    resolveSymbol(uri: string, position: Position): Promise<SymbolInformation | null>;
+    findReferences(uri: string, position: Position): Promise<Location[]>;
+    findImplementations(uri: string, position: Position): Promise<Location[]>;
+    getTypeInformation(uri: string, position: Position): Promise<TypeInformation>;
+    getHoverInfo(uri: string, position: Position): Promise<any>;
+    getCompletions(uri: string, position: Position): Promise<any[]>;
+    analyzeReferencePatterns(references: Location[], symbol: SymbolInformation): Promise<ReferenceAnalysis>;
+    private getDocumentSymbols;
+    private buildDependencyGraph;
+    private detectPatterns;
+    private generateInsights;
+    private analyzeExecutionPaths;
+    private buildKnowledgeGraph;
+    private extractTypeInformation;
+    private calculateConfidence;
+    private getCacheKey;
+    private getLanguageForUri;
+    private convertToSymbolInformation;
+    private findSymbolAtPosition;
+    private positionInRange;
+    private buildSymbolHierarchy;
+    private extractDocumentation;
+    private parseTypeInformation;
+    private getDefaultTypeInformation;
+    private symbolKindToNodeType;
+    private calculateCyclomaticComplexity;
+    private calculateCouplingMetrics;
+    private calculateCohesionMetrics;
+    private detectDesignPatterns;
+    private detectAntiPatterns;
+    private detectLanguagePatterns;
+    private findFunctionCalls;
+    private calculatePathComplexity;
+}
+//# sourceMappingURL=SemanticAnalyzer.d.ts.map

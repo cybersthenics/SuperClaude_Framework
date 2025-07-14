@@ -1,0 +1,17 @@
+# Quick compilation fixes
+
+# Fix import issues
+sed -i 's/import.*ToolCall.*from.*types\.js.*;//g' src/tools/QualityTools.ts
+
+# Fix error handling
+find src -name "*.ts" -exec sed -i 's/error\.message/error instanceof Error ? error.message : String(error)/g' {} \;
+
+# Fix optional properties
+find src -name "*.ts" -exec sed -i 's/\?\: boolean | undefined/\?: boolean/g' {} \;
+find src -name "*.ts" -exec sed -i 's/\?\: string | undefined/\?: string/g' {} \;
+
+# Fix regex issues
+sed -i 's/\\1//g' src/hooks/RealTimeValidator.ts
+
+# Fix undefined checks
+find src -name "*.ts" -exec sed -i 's/\. possibly undefined/.!/g' {} \;

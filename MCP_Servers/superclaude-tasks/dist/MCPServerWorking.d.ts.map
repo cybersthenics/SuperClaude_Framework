@@ -1,0 +1,1 @@
+{"version":3,"file":"MCPServerWorking.d.ts","sourceRoot":"","sources":["../src/MCPServerWorking.ts"],"names":[],"mappings":";AAuBA,qBAAa,6BAA6B;IACxC,OAAO,CAAC,MAAM,CAAS;IACvB,OAAO,CAAC,WAAW,CAAoB;;IAqBvC,OAAO,CAAC,aAAa;YA8JP,gBAAgB;YAYhB,aAAa;YAkBb,gBAAgB;YAchB,gBAAgB;YAchB,sBAAsB;YActB,iBAAiB;YAcjB,kBAAkB;YAclB,sBAAsB;YA8BtB,sBAAsB;IA2B9B,GAAG,IAAI,OAAO,CAAC,IAAI,CAAC;CAK3B"}

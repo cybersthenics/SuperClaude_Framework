@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  shared-services:
+    build: .
+    container_name: superclaude-shared-services
+    ports:
+      - "8080:8080"   # Service API
+      - "9090:9090"   # Metrics endpoint
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://postgres:password@postgres:5432/metrics
+      - CACHE_SIZE=512MB
+      - MAX_CONNECTIONS=1000
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+      - shared_logs:/app/logs
+      - shared_cache:/app/cache
+      - shared_data:/app/data
+    restart: unless-stopped
+    networks:
+      - superclaude-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    
+  redis:
+    image: redis:7-alpine
+    container_name: superclaude-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - superclaude-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    
+  postgres:
+    image: postgres:15-alpine
+    container_name: superclaude-postgres
+    environment:
+      - POSTGRES_DB=metrics
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - superclaude-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: superclaude-prometheus
+    ports:
+      - "9000:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - superclaude-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: superclaude-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    restart: unless-stopped
+    networks:
+      - superclaude-network
+    depends_on:
+      - prometheus
+
+  nginx:
+    image: nginx:alpine
+    container_name: superclaude-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+    networks:
+      - superclaude-network
+    depends_on:
+      - shared-services
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  shared_logs:
+    driver: local
+  shared_cache:
+    driver: local
+  shared_data:
+    driver: local
+
+networks:
+  superclaude-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

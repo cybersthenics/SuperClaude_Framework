@@ -1,540 +1,898 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ErrorCode,
-  McpError
-} from '@modelcontextprotocol/sdk/types.js';
-import { Logger } from '@superclaude/shared';
-import { ReasoningEngine } from './core/ReasoningEngine.js';
-import { DecisionFramework } from './core/DecisionFramework.js';
-import { KnowledgeGraphManager } from './core/KnowledgeGraph.js';
-import { LearningSystem } from './core/LearningSystem.js';
-import {
-  ReasoningRequestSchema,
-  DecisionRequestSchema,
-  KnowledgeQuery,
-  LearningRequestSchema,
-  EvidenceSchema,
-  ReasoningChainSchema,
-  DecisionContextSchema
-} from './types/index.js';
+/**
+ * SuperClaude Intelligence MCP Server
+ * Semantic Code Understanding Engine with LSP Integration
+ */
 
-export class SuperClaudeIntelligenceServer {
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { 
+  CallToolRequestSchema, 
+  ListToolsRequestSchema, 
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  Tool,
+  Resource
+} from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+
+import { LSPManager } from './core/LSPManager.js';
+import { SemanticAnalyzer } from './core/SemanticAnalyzer.js';
+import { SymbolIndexer } from './core/SymbolIndexer.js';
+import { KnowledgeGraphBuilder } from './core/KnowledgeGraphBuilder.js';
+import { ProjectMemoryManager } from './core/ProjectMemoryManager.js';
+import { ReasoningEngine } from './core/ReasoningEngine.js';
+import { 
+  IntelligenceServerConfig, 
+  FindSymbolDefinitionArgs, 
+  FindAllReferencesArgs,
+  GetSymbolTypeInfoArgs,
+  GetHoverInfoArgs,
+  GetCodeCompletionsArgs,
+  AnalyzeCodeStructureArgs,
+  BuildKnowledgeGraphArgs,
+  SaveProjectContextArgs,
+  LoadProjectContextArgs
+} from './types/index.js';
+import { logger } from './services/Logger.js';
+import { 
+  PerformanceMonitor, 
+  CacheManager, 
+  DatabaseService, 
+  ConfigurationService 
+} from './services/SharedStubs.js';
+
+export class IntelligenceServer {
   private server: Server;
-  private reasoningEngine: ReasoningEngine;
-  private decisionFramework: DecisionFramework;
-  private knowledgeGraph: KnowledgeGraphManager;
-  private learningSystem: LearningSystem;
-  private logger: Logger;
+  private lspManager!: LSPManager;
+  private semanticAnalyzer!: SemanticAnalyzer;
+  private symbolIndexer!: SymbolIndexer;
+  private knowledgeGraphBuilder!: KnowledgeGraphBuilder;
+  private projectMemoryManager!: ProjectMemoryManager;
+  private reasoningEngine!: ReasoningEngine;
+  private performanceMonitor!: PerformanceMonitor;
+  private cacheManager!: CacheManager;
+  private config!: IntelligenceServerConfig;
 
   constructor() {
-    this.logger = new Logger('SuperClaudeIntelligenceServer');
-    
     this.server = new Server(
       {
         name: 'superclaude-intelligence',
-        version: '1.0.0',
+        version: '3.0.0',
+        description: 'SuperClaude Intelligence Server - Semantic Code Understanding Engine with LSP Integration'
       },
       {
         capabilities: {
           tools: {},
-        },
+          resources: {}
+        }
       }
     );
 
-    // Initialize core systems
-    this.reasoningEngine = new ReasoningEngine({
-      maxSteps: 20,
-      confidenceThreshold: 0.7,
-      enableMetrics: true
-    });
-
-    this.decisionFramework = new DecisionFramework({
-      defaultMethod: 'weighted-sum',
-      enableRiskAssessment: true,
-      confidenceThreshold: 0.6
-    });
-
-    this.knowledgeGraph = new KnowledgeGraphManager({
-      maxNodes: 10000,
-      maxEdges: 50000,
-      enableInference: true,
-      enableCaching: true
-    });
-
-    this.learningSystem = new LearningSystem({
-      maxExamples: 10000,
-      maxPatterns: 1000,
-      enableAdaptiveLearning: true,
-      confidenceThreshold: 0.6
-    });
-
-    this.setupToolHandlers();
-    this.setupEventListeners();
+    this.initializeConfiguration();
+    this.initializeComponents();
+    this.setupHandlers();
   }
 
-  private setupToolHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [
-        // Reasoning tools
-        {
-          name: 'create_reasoning_chain',
-          description: 'Create a new reasoning chain for multi-step analysis',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              goal: { type: 'string', description: 'The reasoning goal or question' },
-              context: { type: 'object', description: 'Additional context information' },
-              evidence: { 
-                type: 'array', 
-                items: { type: 'object' },
-                description: 'Initial evidence items'
+  private initializeConfiguration(): void {
+    this.config = {
+      serverName: 'superclaude-intelligence',
+      capabilities: ['tools', 'resources', 'prompts'],
+      
+      lsp: {
+        enableMultiLanguageSupport: true,
+        supportedLanguages: ['python', 'typescript', 'javascript', 'go', 'rust', 'php', 'java', 'cpp'],
+        maxConcurrentServers: 5,
+        serverStartupTimeout: 10000,
+        enableIncrementalSync: true
+      },
+      
+      semantic: {
+        enableSymbolIndexing: true,
+        enableTypeInference: true,
+        enableCrossFileAnalysis: true,
+        symbolCacheSize: 100000,
+        indexUpdateBatchSize: 100
+      },
+      
+      performance: {
+        maxAnalysisTime: 300,
+        enableResultCaching: true,
+        cacheTTL: 600,
+        enableBatchOperations: true,
+        maxMemoryUsage: 512
+      },
+      
+      projectMemory: {
+        enablePersistence: true,
+        persistenceInterval: 30000,
+        maxContextSize: 50000,
+        enableIncrementalUpdates: true
+      }
+    };
+  }
+
+  private initializeComponents(): void {
+    // Initialize performance monitoring
+    this.performanceMonitor = new PerformanceMonitor();
+    this.cacheManager = new CacheManager({
+      maxSize: 10000,
+      ttl: this.config.performance.cacheTTL * 1000
+    });
+
+    // Initialize LSP manager
+    this.lspManager = new LSPManager(this.config.lsp);
+    
+    // Initialize symbol indexer
+    this.symbolIndexer = new SymbolIndexer(this.lspManager, this.config.semantic);
+    
+    // Initialize semantic analyzer
+    this.semanticAnalyzer = new SemanticAnalyzer(this.lspManager, this.symbolIndexer);
+    
+    // Initialize knowledge graph builder
+    this.knowledgeGraphBuilder = new KnowledgeGraphBuilder(this.semanticAnalyzer, this.symbolIndexer);
+    
+    // Initialize project memory manager
+    this.projectMemoryManager = new ProjectMemoryManager(this.config.projectMemory);
+    
+    // Initialize reasoning engine
+    this.reasoningEngine = new ReasoningEngine(this.semanticAnalyzer, this.knowledgeGraphBuilder);
+  }
+
+  private setupHandlers(): void {
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      return {
+        tools: [
+          // Symbol Navigation Tools
+          {
+            name: 'find_symbol_definition',
+            description: 'Navigate to symbol definitions across files with LSP precision',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                position: {
+                  type: 'object',
+                  properties: {
+                    line: { type: 'number' },
+                    character: { type: 'number' }
+                  },
+                  required: ['line', 'character']
+                },
+                includeDeclaration: { type: 'boolean', default: true },
+                includeTypeDefinition: { type: 'boolean', default: false }
               },
-              method: { 
-                type: 'string', 
-                enum: ['deductive', 'inductive', 'abductive', 'analogical'],
-                description: 'Reasoning method to use'
+              required: ['uri', 'position']
+            }
+          },
+          
+          {
+            name: 'find_all_references',
+            description: 'Locate all usages of a symbol project-wide with semantic context',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                position: {
+                  type: 'object',
+                  properties: {
+                    line: { type: 'number' },
+                    character: { type: 'number' }
+                  },
+                  required: ['line', 'character']
+                },
+                includeDeclaration: { type: 'boolean', default: true },
+                includeWriteAccess: { type: 'boolean', default: true },
+                maxResults: { type: 'number', default: 1000 }
+              },
+              required: ['uri', 'position']
+            }
+          },
+
+          {
+            name: 'get_symbol_type_info',
+            description: 'Retrieve comprehensive type information and signatures',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                position: {
+                  type: 'object',
+                  properties: {
+                    line: { type: 'number' },
+                    character: { type: 'number' }
+                  },
+                  required: ['line', 'character']
+                },
+                includeHierarchy: { type: 'boolean', default: true },
+                includeMembers: { type: 'boolean', default: true },
+                includeDocumentation: { type: 'boolean', default: true }
+              },
+              required: ['uri', 'position']
+            }
+          },
+
+          {
+            name: 'get_hover_info',
+            description: 'Get documentation and type info for symbols at cursor',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                position: {
+                  type: 'object',
+                  properties: {
+                    line: { type: 'number' },
+                    character: { type: 'number' }
+                  },
+                  required: ['line', 'character']
+                },
+                includeExamples: { type: 'boolean', default: false },
+                includeRelated: { type: 'boolean', default: false }
+              },
+              required: ['uri', 'position']
+            }
+          },
+
+          {
+            name: 'get_code_completions',
+            description: 'Context-aware code completion suggestions via LSP',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                position: {
+                  type: 'object',
+                  properties: {
+                    line: { type: 'number' },
+                    character: { type: 'number' }
+                  },
+                  required: ['line', 'character']
+                },
+                maxResults: { type: 'number', default: 50 },
+                includeSnippets: { type: 'boolean', default: true },
+                includeDocumentation: { type: 'boolean', default: true }
+              },
+              required: ['uri', 'position']
+            }
+          },
+
+          // Advanced Analysis Tools
+          {
+            name: 'analyze_code_structure',
+            description: 'Deep AST + semantic analysis via LSP with pattern detection',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                includeSemantics: { type: 'boolean', default: true },
+                includeDependencies: { type: 'boolean', default: true },
+                includePatterns: { type: 'boolean', default: true },
+                maxDepth: { type: 'number', default: 10 }
+              },
+              required: ['uri']
+            }
+          },
+
+          {
+            name: 'build_knowledge_graph',
+            description: 'Semantic-aware knowledge graph with type relationships',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                projectRoot: { type: 'string' },
+                includeTypes: { type: 'boolean', default: true },
+                includeInheritance: { type: 'boolean', default: true },
+                includeUsage: { type: 'boolean', default: true },
+                maxNodes: { type: 'number', default: 1000 },
+                maxDepth: { type: 'number', default: 5 }
+              },
+              required: ['projectRoot']
+            }
+          },
+
+          {
+            name: 'analyze_execution_paths',
+            description: 'Analyze code execution paths and control flow',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                uri: { type: 'string', format: 'uri' },
+                startFunction: { type: 'string' },
+                maxDepth: { type: 'number', default: 5 },
+                includeConditions: { type: 'boolean', default: true }
+              },
+              required: ['uri']
+            }
+          },
+
+          // Symbol Search and Index Tools
+          {
+            name: 'search_symbols',
+            description: 'Fast symbol search across project with fuzzy matching',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: { type: 'string' },
+                symbolKind: { type: 'string' },
+                fuzzy: { type: 'boolean', default: true },
+                maxResults: { type: 'number', default: 100 },
+                includeReferences: { type: 'boolean', default: false }
+              },
+              required: ['query']
+            }
+          },
+
+          {
+            name: 'index_project',
+            description: 'Build comprehensive symbol index for project',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                projectRoot: { type: 'string' },
+                languages: { type: 'array', items: { type: 'string' } },
+                includeTests: { type: 'boolean', default: false },
+                incremental: { type: 'boolean', default: true }
+              },
+              required: ['projectRoot']
+            }
+          },
+
+          // Project Memory Tools
+          {
+            name: 'save_project_context',
+            description: 'Persist semantic analysis state for future sessions',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                projectId: { type: 'string' },
+                context: { type: 'object' },
+                options: {
+                  type: 'object',
+                  properties: {
+                    compressionLevel: { type: 'number', enum: [1, 2, 3], default: 2 },
+                    includeSymbolIndex: { type: 'boolean', default: true },
+                    includeTypeCache: { type: 'boolean', default: true },
+                    includeDependencyGraph: { type: 'boolean', default: true }
+                  }
+                }
+              },
+              required: ['projectId', 'context']
+            }
+          },
+
+          {
+            name: 'load_project_context',
+            description: 'Restore previous semantic analysis state',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                projectId: { type: 'string' },
+                options: {
+                  type: 'object',
+                  properties: {
+                    validateIntegrity: { type: 'boolean', default: true },
+                    updateIndexes: { type: 'boolean', default: true },
+                    maxAge: { type: 'number', default: 604800000 }
+                  }
+                }
+              },
+              required: ['projectId']
+            }
+          },
+
+          // Reasoning and Analysis Tools
+          {
+            name: 'execute_reasoning_chain',
+            description: 'Complex multi-step reasoning with Sequential integration',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                problem: { type: 'object' },
+                context: { type: 'object' },
+                constraints: { type: 'array', items: { type: 'object' } },
+                goals: { type: 'array', items: { type: 'object' } }
+              },
+              required: ['problem', 'context']
+            }
+          },
+
+          {
+            name: 'generate_insights',
+            description: 'Generate actionable insights from semantic analysis',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                analysisResults: { type: 'array', items: { type: 'object' } },
+                focusAreas: { type: 'array', items: { type: 'string' } },
+                priorityLevel: { type: 'string', enum: ['low', 'medium', 'high'], default: 'medium' }
+              },
+              required: ['analysisResults']
+            }
+          },
+
+          // Performance and Metrics Tools
+          {
+            name: 'get_performance_metrics',
+            description: 'Retrieve LSP and analysis performance metrics',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                includeLanguageServers: { type: 'boolean', default: true },
+                includeAnalysisMetrics: { type: 'boolean', default: true },
+                includeMemoryUsage: { type: 'boolean', default: true },
+                timeRange: { type: 'string', enum: ['1h', '24h', '7d'], default: '1h' }
               }
-            },
-            required: ['goal']
-          }
-        },
-        {
-          name: 'add_evidence',
-          description: 'Add evidence to an existing reasoning chain',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              chainId: { type: 'string', description: 'Reasoning chain ID' },
-              evidence: { type: 'object', description: 'Evidence item to add' }
-            },
-            required: ['chainId', 'evidence']
-          }
-        },
-        {
-          name: 'reasoning_step',
-          description: 'Perform a reasoning step in a chain',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              chainId: { type: 'string', description: 'Reasoning chain ID' },
-              type: { 
-                type: 'string', 
-                enum: ['analysis', 'synthesis', 'evaluation', 'inference', 'verification'],
-                description: 'Type of reasoning step'
-              },
-              inputEvidenceIds: { 
-                type: 'array', 
-                items: { type: 'string' },
-                description: 'Evidence IDs to use as input'
-              },
-              method: { type: 'string', description: 'Specific method for this step' },
-              rationale: { type: 'string', description: 'Reasoning rationale' }
-            },
-            required: ['chainId', 'type', 'inputEvidenceIds', 'method', 'rationale']
-          }
-        },
-        {
-          name: 'complete_reasoning_chain',
-          description: 'Complete a reasoning chain with a conclusion',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              chainId: { type: 'string', description: 'Reasoning chain ID' },
-              conclusion: { type: 'string', description: 'Final conclusion' }
-            },
-            required: ['chainId', 'conclusion']
-          }
-        },
-        {
-          name: 'get_reasoning_chain',
-          description: 'Get a reasoning chain by ID',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              chainId: { type: 'string', description: 'Reasoning chain ID' }
-            },
-            required: ['chainId']
-          }
-        },
+            }
+          },
 
-        // Decision tools
-        {
-          name: 'make_decision',
-          description: 'Make a decision using structured decision-making framework',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              problem: { type: 'string', description: 'Problem statement' },
-              criteria: { 
-                type: 'array', 
-                items: { type: 'object' },
-                description: 'Decision criteria with weights'
-              },
-              options: { 
-                type: 'array', 
-                items: { type: 'object' },
-                description: 'Available options with scores'
-              },
-              method: { 
-                type: 'string', 
-                enum: ['weighted-sum', 'topsis', 'ahp', 'fuzzy'],
-                description: 'Decision method to use'
-              },
-              context: { type: 'object', description: 'Additional context' }
-            },
-            required: ['problem', 'criteria', 'options']
+          {
+            name: 'optimize_performance',
+            description: 'Optimize caches and indexes for better performance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                clearCaches: { type: 'boolean', default: false },
+                rebuildIndexes: { type: 'boolean', default: false },
+                compactMemory: { type: 'boolean', default: true }
+              }
+            }
           }
-        },
-        {
-          name: 'get_decision',
-          description: 'Get a decision result by ID',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              decisionId: { type: 'string', description: 'Decision result ID' }
-            },
-            required: ['decisionId']
-          }
-        },
-
-        // Knowledge graph tools
-        {
-          name: 'create_knowledge_graph',
-          description: 'Create a new knowledge graph',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Graph name' },
-              metadata: { type: 'object', description: 'Additional metadata' }
-            },
-            required: ['name']
-          }
-        },
-        {
-          name: 'add_knowledge_node',
-          description: 'Add a node to a knowledge graph',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              graphId: { type: 'string', description: 'Knowledge graph ID' },
-              type: { type: 'string', description: 'Node type' },
-              label: { type: 'string', description: 'Node label' },
-              properties: { type: 'object', description: 'Node properties' },
-              confidence: { type: 'number', minimum: 0, maximum: 1 },
-              source: { type: 'string', description: 'Data source' }
-            },
-            required: ['graphId', 'type', 'label', 'properties']
-          }
-        },
-        {
-          name: 'add_knowledge_edge',
-          description: 'Add an edge to a knowledge graph',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              graphId: { type: 'string', description: 'Knowledge graph ID' },
-              sourceNodeId: { type: 'string', description: 'Source node ID' },
-              targetNodeId: { type: 'string', description: 'Target node ID' },
-              relationship: { type: 'string', description: 'Relationship type' },
-              properties: { type: 'object', description: 'Edge properties' },
-              confidence: { type: 'number', minimum: 0, maximum: 1 }
-            },
-            required: ['graphId', 'sourceNodeId', 'targetNodeId', 'relationship']
-          }
-        },
-        {
-          name: 'query_knowledge_graph',
-          description: 'Query a knowledge graph',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              graphId: { type: 'string', description: 'Knowledge graph ID' },
-              query: { type: 'string', description: 'Query string' },
-              type: { 
-                type: 'string', 
-                enum: ['search', 'inference', 'similarity', 'path'],
-                description: 'Query type'
-              },
-              parameters: { type: 'object', description: 'Query parameters' },
-              limit: { type: 'number', minimum: 1, maximum: 100 }
-            },
-            required: ['graphId', 'query', 'type']
-          }
-        },
-
-        // Learning tools
-        {
-          name: 'create_learning_model',
-          description: 'Create a new learning model',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              type: { 
-                type: 'string', 
-                enum: ['pattern-recognition', 'outcome-prediction', 'optimization', 'classification'],
-                description: 'Model type'
-              },
-              domain: { type: 'string', description: 'Domain or subject area' },
-              metadata: { type: 'object', description: 'Additional metadata' }
-            },
-            required: ['type', 'domain']
-          }
-        },
-        {
-          name: 'add_learning_example',
-          description: 'Add a learning example to improve models',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              example: { type: 'object', description: 'Learning example data' },
-              updatePatterns: { type: 'boolean', description: 'Whether to update patterns' },
-              domain: { type: 'string', description: 'Target domain' }
-            },
-            required: ['example']
-          }
-        },
-        {
-          name: 'predict_outcome',
-          description: 'Predict outcome based on learned patterns',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              modelId: { type: 'string', description: 'Learning model ID' },
-              input: { type: 'object', description: 'Input data for prediction' },
-              context: { type: 'object', description: 'Additional context' }
-            },
-            required: ['modelId', 'input']
-          }
-        },
-        {
-          name: 'provide_feedback',
-          description: 'Provide feedback on a prediction to improve learning',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              predictionId: { type: 'string', description: 'Prediction ID' },
-              actualOutcome: { description: 'Actual outcome that occurred' },
-              wasCorrect: { type: 'boolean', description: 'Whether prediction was correct' },
-              feedback: { type: 'string', description: 'Additional feedback text' }
-            },
-            required: ['predictionId', 'actualOutcome', 'wasCorrect']
-          }
-        },
-        {
-          name: 'update_context',
-          description: 'Update context state for learning and reasoning',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              sessionId: { type: 'string', description: 'Session ID' },
-              domain: { type: 'string', description: 'Domain context' },
-              goals: { type: 'array', items: { type: 'string' }, description: 'Current goals' },
-              constraints: { type: 'array', items: { type: 'string' }, description: 'Constraints' },
-              preferences: { type: 'object', description: 'User preferences' }
-            },
-            required: ['sessionId']
-          }
-        },
-
-        // Utility tools
-        {
-          name: 'get_system_metrics',
-          description: 'Get performance metrics from all intelligence systems',
-          inputSchema: {
-            type: 'object',
-            properties: {},
-            additionalProperties: false
-          }
-        }
-      ]
-    }));
+        ]
+      };
+    });
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
+      
+      const startTime = Date.now();
+      this.performanceMonitor.startOperation(name);
 
       try {
+        let result;
+        
         switch (name) {
-          // Reasoning tools
-          case 'create_reasoning_chain': {
-            const validated = ReasoningRequestSchema.parse(args);
-            const chain = await this.reasoningEngine.createReasoningChain(validated);
-            return { content: [{ type: 'text', text: JSON.stringify(chain, null, 2) }] };
-          }
-
-          case 'add_evidence': {
-            const { chainId, evidence } = args;
-            const validated = EvidenceSchema.parse(evidence);
-            await this.reasoningEngine.addEvidence(chainId, validated);
-            return { content: [{ type: 'text', text: 'Evidence added successfully' }] };
-          }
-
-          case 'reasoning_step': {
-            const { chainId, type, inputEvidenceIds, method, rationale } = args;
-            const step = await this.reasoningEngine.reasoningStep(
-              chainId, type, inputEvidenceIds, method, rationale
-            );
-            return { content: [{ type: 'text', text: JSON.stringify(step, null, 2) }] };
-          }
-
-          case 'complete_reasoning_chain': {
-            const { chainId, conclusion } = args;
-            const chain = await this.reasoningEngine.completeChain(chainId, conclusion);
-            return { content: [{ type: 'text', text: JSON.stringify(chain, null, 2) }] };
-          }
-
-          case 'get_reasoning_chain': {
-            const { chainId } = args;
-            const chain = this.reasoningEngine.getChain(chainId);
-            if (!chain) {
-              throw new McpError(ErrorCode.InvalidRequest, `Reasoning chain ${chainId} not found`);
-            }
-            return { content: [{ type: 'text', text: JSON.stringify(chain, null, 2) }] };
-          }
-
-          // Decision tools
-          case 'make_decision': {
-            const validated = DecisionRequestSchema.parse(args);
-            const result = await this.decisionFramework.makeDecision(validated);
-            return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-          }
-
-          case 'get_decision': {
-            const { decisionId } = args;
-            const decision = this.decisionFramework.getDecision(decisionId);
-            if (!decision) {
-              throw new McpError(ErrorCode.InvalidRequest, `Decision ${decisionId} not found`);
-            }
-            return { content: [{ type: 'text', text: JSON.stringify(decision, null, 2) }] };
-          }
-
-          // Knowledge graph tools
-          case 'create_knowledge_graph': {
-            const { name, metadata } = args;
-            const graph = await this.knowledgeGraph.createGraph(name, metadata);
-            return { content: [{ type: 'text', text: JSON.stringify(graph, null, 2) }] };
-          }
-
-          case 'add_knowledge_node': {
-            const { graphId, type, label, properties, confidence, source } = args;
-            const node = await this.knowledgeGraph.addNode(
-              graphId, type, label, properties, confidence, source
-            );
-            return { content: [{ type: 'text', text: JSON.stringify(node, null, 2) }] };
-          }
-
-          case 'add_knowledge_edge': {
-            const { graphId, sourceNodeId, targetNodeId, relationship, properties, confidence } = args;
-            const edge = await this.knowledgeGraph.addEdge(
-              graphId, sourceNodeId, targetNodeId, relationship, properties, confidence
-            );
-            return { content: [{ type: 'text', text: JSON.stringify(edge, null, 2) }] };
-          }
-
-          case 'query_knowledge_graph': {
-            const { graphId, query, type, parameters, limit } = args;
-            const queryObj: KnowledgeQuery = { query, type, parameters, limit };
-            const result = await this.knowledgeGraph.query(graphId, queryObj);
-            return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-          }
-
-          // Learning tools
-          case 'create_learning_model': {
-            const { type, domain, metadata } = args;
-            const model = await this.learningSystem.createModel(type, domain, metadata);
-            return { content: [{ type: 'text', text: JSON.stringify(model, null, 2) }] };
-          }
-
-          case 'add_learning_example': {
-            const validated = LearningRequestSchema.parse(args);
-            await this.learningSystem.addExample(validated);
-            return { content: [{ type: 'text', text: 'Learning example added successfully' }] };
-          }
-
-          case 'predict_outcome': {
-            const { modelId, input, context } = args;
-            const result = await this.learningSystem.predict(modelId, input, context);
-            return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-          }
-
-          case 'provide_feedback': {
-            const { predictionId, actualOutcome, wasCorrect, feedback } = args;
-            await this.learningSystem.provideFeedback(predictionId, actualOutcome, wasCorrect, feedback);
-            return { content: [{ type: 'text', text: 'Feedback provided successfully' }] };
-          }
-
-          case 'update_context': {
-            const { sessionId, domain, goals, constraints, preferences } = args;
-            const context = await this.learningSystem.updateContext(
-              sessionId, domain, goals, constraints, preferences
-            );
-            return { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] };
-          }
-
-          // Utility tools
-          case 'get_system_metrics': {
-            const metrics = {
-              reasoning: this.reasoningEngine.getMetrics(),
-              decision: this.decisionFramework.getMetrics(),
-              knowledge: this.knowledgeGraph.getMetrics(),
-              learning: this.learningSystem.getMetrics()
-            };
-            return { content: [{ type: 'text', text: JSON.stringify(metrics, null, 2) }] };
-          }
-
+          case 'find_symbol_definition':
+            result = await this.handleFindSymbolDefinition(args as unknown as FindSymbolDefinitionArgs);
+            break;
+            
+          case 'find_all_references':
+            result = await this.handleFindAllReferences(args as unknown as FindAllReferencesArgs);
+            break;
+            
+          case 'get_symbol_type_info':
+            result = await this.handleGetSymbolTypeInfo(args as unknown as GetSymbolTypeInfoArgs);
+            break;
+            
+          case 'get_hover_info':
+            result = await this.handleGetHoverInfo(args as unknown as GetHoverInfoArgs);
+            break;
+            
+          case 'get_code_completions':
+            result = await this.handleGetCodeCompletions(args as unknown as GetCodeCompletionsArgs);
+            break;
+            
+          case 'analyze_code_structure':
+            result = await this.handleAnalyzeCodeStructure(args as unknown as AnalyzeCodeStructureArgs);
+            break;
+            
+          case 'build_knowledge_graph':
+            result = await this.handleBuildKnowledgeGraph(args as unknown as BuildKnowledgeGraphArgs);
+            break;
+            
+          case 'save_project_context':
+            result = await this.handleSaveProjectContext(args as unknown as SaveProjectContextArgs);
+            break;
+            
+          case 'load_project_context':
+            result = await this.handleLoadProjectContext(args as unknown as LoadProjectContextArgs);
+            break;
+            
           default:
-            throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+            throw new Error(`Unknown tool: ${name}`);
         }
+
+        this.performanceMonitor.endOperation(name, Date.now() - startTime);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
+        };
       } catch (error) {
-        this.logger.error(`Tool ${name} failed:`, error);
-        if (error instanceof McpError) {
-          throw error;
+        this.performanceMonitor.recordError(name, error);
+        logger.error(`Tool execution failed: ${name}`, error);
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error executing ${name}: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ],
+          isError: true
+        };
+      }
+    });
+
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      return {
+        resources: [
+          {
+            uri: 'intelligence://project-analysis-state',
+            name: 'Project Analysis State',
+            description: 'Current semantic analysis state for the project',
+            mimeType: 'application/json'
+          },
+          {
+            uri: 'intelligence://symbol-index',
+            name: 'Symbol Index',
+            description: 'Project-wide symbol index with semantic information',
+            mimeType: 'application/json'
+          },
+          {
+            uri: 'intelligence://knowledge-graph',
+            name: 'Knowledge Graph',
+            description: 'Semantic relationships and type hierarchies',
+            mimeType: 'application/json'
+          },
+          {
+            uri: 'intelligence://performance-metrics',
+            name: 'Performance Metrics',
+            description: 'LSP and analysis performance metrics',
+            mimeType: 'application/json'
+          }
+        ]
+      };
+    });
+
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+      
+      try {
+        let content;
+        
+        switch (uri) {
+          case 'intelligence://project-analysis-state':
+            content = await this.getProjectAnalysisState();
+            break;
+            
+          case 'intelligence://symbol-index':
+            content = await this.getSymbolIndex();
+            break;
+            
+          case 'intelligence://knowledge-graph':
+            content = await this.getKnowledgeGraph();
+            break;
+            
+          case 'intelligence://performance-metrics':
+            content = await this.getPerformanceMetrics();
+            break;
+            
+          default:
+            throw new Error(`Unknown resource: ${uri}`);
         }
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-        );
+
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(content, null, 2)
+            }
+          ]
+        };
+      } catch (error) {
+        logger.error(`Resource read failed: ${uri}`, error);
+        throw error;
       }
     });
   }
 
-  private setupEventListeners() {
-    // Reasoning engine events
-    this.reasoningEngine.on('chainCreated', (data) => {
-      this.logger.info(`Reasoning chain created: ${data.chainId}`);
-    });
-
-    this.reasoningEngine.on('chainCompleted', (data) => {
-      this.logger.info(`Reasoning chain completed: ${data.chainId} with confidence ${data.confidence}`);
-    });
-
-    // Decision framework events
-    this.decisionFramework.on('decisionMade', (data) => {
-      this.logger.info(`Decision made: ${data.selectedOption} with confidence ${data.confidence}`);
-    });
-
-    // Knowledge graph events
-    this.knowledgeGraph.on('graphCreated', (data) => {
-      this.logger.info(`Knowledge graph created: ${data.graphId}`);
-    });
-
-    // Learning system events
-    this.learningSystem.on('modelCreated', (data) => {
-      this.logger.info(`Learning model created: ${data.modelId} for domain ${data.domain}`);
-    });
-
-    this.learningSystem.on('predictionMade', (data) => {
-      this.logger.info(`Prediction made with confidence ${data.confidence} using ${data.patternsUsed} patterns`);
-    });
+  // Tool handlers implementation
+  private async handleFindSymbolDefinition(args: FindSymbolDefinitionArgs): Promise<any> {
+    const { uri, position, includeDeclaration = true, includeTypeDefinition = false } = args;
+    
+    const language = this.getLanguageForUri(uri);
+    await this.lspManager.synchronizeDocument(uri, await this.readFileContent(uri), language);
+    
+    const definitions = await this.lspManager.sendRequest(
+      language,
+      'textDocument/definition',
+      {
+        textDocument: { uri },
+        position
+      }
+    );
+    
+    const typeDefinitions = includeTypeDefinition
+      ? await this.lspManager.sendRequest(language, 'textDocument/typeDefinition', { textDocument: { uri }, position })
+      : [];
+    
+    // Enhance with semantic information
+    const enhancedDefinitions = await Promise.all(
+      (definitions as any[]).map(async (def: any) => {
+        const symbolInfo = await this.semanticAnalyzer.resolveSymbol(def.uri, def.range.start);
+        return {
+          location: def,
+          symbolInfo,
+          typeInformation: symbolInfo?.typeInformation,
+          documentation: symbolInfo?.documentation
+        };
+      })
+    );
+    
+    return {
+      definitions: enhancedDefinitions,
+      typeDefinitions,
+      metadata: {
+        language,
+        processingTime: Date.now(),
+        symbolCount: enhancedDefinitions.length
+      }
+    };
   }
 
-  async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    this.logger.info('SuperClaude Intelligence Server started');
+  private async handleFindAllReferences(args: FindAllReferencesArgs): Promise<any> {
+    const { uri, position, includeDeclaration = true, maxResults = 1000 } = args;
+    
+    const language = this.getLanguageForUri(uri);
+    await this.lspManager.synchronizeDocument(uri, await this.readFileContent(uri), language);
+    
+    const references = await this.lspManager.sendRequest(
+      language,
+      'textDocument/references',
+      {
+        textDocument: { uri },
+        position,
+        context: { includeDeclaration }
+      }
+    );
+    
+    const limitedReferences = (references as any[]).slice(0, maxResults);
+    const groupedReferences = this.groupReferencesByFile(limitedReferences);
+    const symbolInfo = await this.semanticAnalyzer.resolveSymbol(uri, position);
+    const referenceAnalysis = await this.semanticAnalyzer.analyzeReferencePatterns(limitedReferences, symbolInfo!);
+    
+    return {
+      symbol: symbolInfo,
+      references: limitedReferences,
+      groupedByFile: groupedReferences,
+      analysis: referenceAnalysis,
+      metadata: {
+        totalFound: (references as any[]).length,
+        returned: limitedReferences.length,
+        truncated: (references as any[]).length > maxResults
+      }
+    };
+  }
+
+  private async handleGetSymbolTypeInfo(args: GetSymbolTypeInfoArgs): Promise<any> {
+    const { uri, position, includeHierarchy = true, includeMembers = true, includeDocumentation = true } = args;
+    
+    const language = this.getLanguageForUri(uri);
+    await this.lspManager.synchronizeDocument(uri, await this.readFileContent(uri), language);
+    
+    const symbolInfo = await this.semanticAnalyzer.resolveSymbol(uri, position);
+    const typeDefinition = await this.lspManager.sendRequest(
+      language,
+      'textDocument/typeDefinition',
+      { textDocument: { uri }, position }
+    );
+    
+    return {
+      symbol: symbolInfo,
+      typeDefinition: typeDefinition[0],
+      metadata: {
+        language,
+        processingTime: Date.now()
+      }
+    };
+  }
+
+  private async handleGetHoverInfo(args: GetHoverInfoArgs): Promise<any> {
+    const { uri, position, includeExamples = false, includeRelated = false } = args;
+    
+    const language = this.getLanguageForUri(uri);
+    await this.lspManager.synchronizeDocument(uri, await this.readFileContent(uri), language);
+    
+    const hoverInfo = await this.lspManager.sendRequest(
+      language,
+      'textDocument/hover',
+      { textDocument: { uri }, position }
+    );
+    
+    if (!hoverInfo) {
+      return { symbol: null, hover: null, metadata: { found: false } };
+    }
+    
+    const symbolInfo = await this.semanticAnalyzer.resolveSymbol(uri, position);
+    
+    return {
+      symbol: symbolInfo,
+      hover: hoverInfo,
+      metadata: {
+        language,
+        hasDocumentation: !!symbolInfo?.documentation,
+        processingTime: Date.now()
+      }
+    };
+  }
+
+  private async handleGetCodeCompletions(args: GetCodeCompletionsArgs): Promise<any> {
+    const { uri, position, maxResults = 50, includeSnippets = true, includeDocumentation = true } = args;
+    
+    const language = this.getLanguageForUri(uri);
+    await this.lspManager.synchronizeDocument(uri, await this.readFileContent(uri), language);
+    
+    const completions = await this.lspManager.sendRequest(
+      language,
+      'textDocument/completion',
+      { textDocument: { uri }, position }
+    );
+    
+    if (!completions) {
+      return { completions: [], metadata: { found: false } };
+    }
+    
+    const limitedCompletions = (completions as any).items.slice(0, maxResults);
+    
+    return {
+      completions: limitedCompletions,
+      metadata: {
+        language,
+        totalAvailable: (completions as any).items.length,
+        returned: limitedCompletions.length,
+        hasMore: (completions as any).items.length > maxResults
+      }
+    };
+  }
+
+  private async handleAnalyzeCodeStructure(args: AnalyzeCodeStructureArgs): Promise<any> {
+    const { uri, includeSemantics = true, includeDependencies = true, includePatterns = true, maxDepth = 10 } = args;
+    
+    const context = {
+      projectRoot: this.getProjectRoot(uri),
+      languageId: this.getLanguageForUri(uri),
+      fileUri: uri,
+      includeReferences: true,
+      includeImplementations: true,
+      maxDepth
+    };
+    
+    return await this.semanticAnalyzer.analyzeCode(context);
+  }
+
+  private async handleBuildKnowledgeGraph(args: BuildKnowledgeGraphArgs): Promise<any> {
+    const { projectRoot, includeTypes = true, includeInheritance = true, includeUsage = true, maxNodes = 1000, maxDepth = 5 } = args;
+    
+    const context = {
+      projectRoot,
+      languageId: 'multi',
+      fileUri: projectRoot,
+      includeReferences: includeUsage,
+      includeImplementations: includeInheritance,
+      maxDepth
+    };
+    
+    return await this.knowledgeGraphBuilder.buildKnowledgeGraph(context);
+  }
+
+  private async handleSaveProjectContext(args: SaveProjectContextArgs): Promise<any> {
+    const { projectId, context, options = {} } = args;
+    return await this.projectMemoryManager.saveProjectContext(projectId, context, options);
+  }
+
+  private async handleLoadProjectContext(args: LoadProjectContextArgs): Promise<any> {
+    const { projectId, options = {} } = args;
+    return await this.projectMemoryManager.loadProjectContext(projectId, options);
+  }
+
+  // Resource handlers
+  private async getProjectAnalysisState(): Promise<any> {
+    return {
+      serverStatus: 'running',
+      languageServers: this.lspManager.getAllServerStatuses(),
+      symbolIndexSize: this.symbolIndexer.getFullIndex().size,
+      cacheStats: this.cacheManager.getStats(),
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getSymbolIndex(): Promise<any> {
+    return this.symbolIndexer.getFullIndex();
+  }
+
+  private async getKnowledgeGraph(): Promise<any> {
+    // Return cached knowledge graph or build a simple one
+    return {
+      nodes: [],
+      edges: [],
+      clusters: [],
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  private async getPerformanceMetrics(): Promise<any> {
+    return {
+      lspPerformance: this.lspManager.getPerformanceMetrics(),
+      operationMetrics: this.performanceMonitor.getMetrics(),
+      memoryUsage: process.memoryUsage(),
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // Utility methods
+  private getLanguageForUri(uri: string): string {
+    const extension = uri.split('.').pop()?.toLowerCase();
+    
+    const extensionMap: Record<string, string> = {
+      'py': 'python',
+      'ts': 'typescript',
+      'js': 'javascript',
+      'go': 'go',
+      'rs': 'rust',
+      'php': 'php',
+      'java': 'java',
+      'cpp': 'cpp',
+      'cc': 'cpp',
+      'cxx': 'cpp',
+      'c': 'cpp'
+    };
+
+    return extensionMap[extension || ''] || 'unknown';
+  }
+
+  private getProjectRoot(uri: string): string {
+    // Simple implementation - in production, this would be more sophisticated
+    return uri.substring(0, uri.lastIndexOf('/'));
+  }
+
+  private async readFileContent(uri: string): Promise<string> {
+    // In a real implementation, this would read the file content
+    return '';
+  }
+
+  private groupReferencesByFile(references: any[]): Map<string, any[]> {
+    const grouped = new Map<string, any[]>();
+    
+    references.forEach(ref => {
+      const file = ref.uri;
+      if (!grouped.has(file)) {
+        grouped.set(file, []);
+      }
+      grouped.get(file)!.push(ref);
+    });
+    
+    return grouped;
+  }
+
+  async start(): Promise<void> {
+    const transport = { readable: process.stdin, writable: process.stdout };
+    
+    logger.info('Starting SuperClaude Intelligence Server');
+    
+    try {
+      await this.server.connect(transport);
+      
+      logger.info('SuperClaude Intelligence Server started successfully');
+    } catch (error) {
+      logger.error('Failed to start server', error);
+      process.exit(1);
+    }
+  }
+
+  async stop(): Promise<void> {
+    logger.info('Stopping SuperClaude Intelligence Server');
+    
+    try {
+      await this.lspManager.shutdownAll();
+      await this.server.close();
+      
+      logger.info('SuperClaude Intelligence Server stopped successfully');
+    } catch (error) {
+      logger.error('Error stopping server', error);
+    }
   }
 }
-
-export default SuperClaudeIntelligenceServer;

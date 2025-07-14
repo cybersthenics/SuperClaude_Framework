@@ -1,66 +1,54 @@
 {
-  "name": "@superclaude/bridge-hooks",
-  "version": "1.0.0",
-  "description": "Lightweight bridge hooks for SuperClaude integration with Claude Code",
+  "name": "superclaude-bridge-hooks",
+  "version": "3.0.0",
+  "description": "SuperClaude MCP Hooks Integration with 2.84x optimization factor",
+  "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "server": "tsx src/http-server.ts",
-    "server:dev": "tsx watch src/http-server.ts",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "benchmark": "tsx src/examples/bridge-example.ts",
-    "examples": "tsx src/examples/bridge-example.ts",
-    "lint": "eslint src tests --ext .ts",
-    "lint:fix": "eslint src tests --ext .ts --fix",
-    "type-check": "tsc --noEmit",
-    "clean": "rimraf dist",
-    "prepublishOnly": "npm run clean && npm run build",
-    "start": "node dist/http-server.js"
+    "test:performance": "jest --testPathPattern=performance",
+    "test:reliability": "jest --testPathPattern=reliability",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "ws": "^8.13.0",
+    "jsonwebtoken": "^9.0.0",
+    "lru-cache": "^10.0.0",
+    "prom-client": "^15.0.0",
+    "compression": "^1.7.4",
+    "fast-json-stringify": "^5.8.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/ws": "^8.5.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/compression": "^1.7.0",
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
   },
   "keywords": [
     "superclaude",
-    "bridge",
+    "mcp",
     "hooks",
-    "integration",
-    "claude-code",
-    "lightweight"
+    "performance",
+    "optimization",
+    "bridge"
   ],
   "author": "SuperClaude Team",
   "license": "MIT",
-  "dependencies": {
-    "@superclaude/shared": "file:../shared",
-    "axios": "^1.6.2",
-    "express": "^4.18.2",
-    "ws": "^8.14.2"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.8",
-    "@types/node": "^20.8.10",
-    "@types/ws": "^8.5.8",
-    "@typescript-eslint/eslint-plugin": "^6.11.0",
-    "@typescript-eslint/parser": "^6.11.0",
-    "eslint": "^8.53.0",
-    "jest": "^29.7.0",
-    "rimraf": "^5.0.5",
-    "ts-jest": "^29.1.1",
-    "tsx": "^4.1.4",
-    "typescript": "^5.5.2"
-  },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/superclaude/mcp-servers.git",
-    "directory": "MCP_Servers/bridge-hooks"
   }
 }

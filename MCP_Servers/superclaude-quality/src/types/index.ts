@@ -1,292 +1,457 @@
-import { z } from 'zod';
+/**
+ * SuperClaude Quality - Core Types and Interfaces
+ * 11-step quality validation pipeline with semantic checks
+ */
 
-// ==================== QUALITY VALIDATION TYPES ====================
+export type ValidationStatus = 'passed' | 'failed' | 'warning' | 'skipped';
+export type QualityGateType = 'syntax' | 'semantic' | 'type' | 'import' | 'lint' | 'security' | 'test' | 'semanticCoverage' | 'performance' | 'documentation' | 'integration';
+export type QualityCategory = 'syntax' | 'semantic' | 'security' | 'performance' | 'test' | 'documentation' | 'style' | 'maintainability';
+export type ValidationScope = 'file' | 'module' | 'project' | 'codebase';
 
-export enum QualityLevel {
-  CRITICAL = 'critical',
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
-  INFO = 'info'
+export interface QualityValidationContext {
+  target: ValidationTarget;
+  scope: ValidationScopeConfig;
+  gates: QualityGate[];
+  requirements: QualityRequirements;
+  constraints: ValidationConstraints;
+  hookContext?: HookContext;
 }
 
-export enum ValidationStep {
-  SYNTAX = 'syntax',
-  TYPE_CHECK = 'type_check',
-  LINT = 'lint',
-  SECURITY = 'security',
-  TEST = 'test',
-  PERFORMANCE = 'performance',
-  DOCUMENTATION = 'documentation',
-  INTEGRATION = 'integration'
-}
-
-export enum SemanticContext {
-  FUNCTION = 'function',
-  CLASS = 'class',
-  MODULE = 'module',
-  COMPONENT = 'component',
-  API = 'api',
-  DATABASE = 'database',
-  CONFIGURATION = 'configuration'
-}
-
-// ==================== SCHEMAS ====================
-
-export const QualityIssueSchema = z.object({
-  id: z.string(),
-  level: z.nativeEnum(QualityLevel),
-  step: z.nativeEnum(ValidationStep),
-  title: z.string(),
-  description: z.string(),
-  filePath: z.string(),
-  line: z.number().optional(),
-  column: z.number().optional(),
-  rule: z.string().optional(),
-  fixable: z.boolean().default(false),
-  suggestedFix: z.string().optional(),
-  semanticContext: z.nativeEnum(SemanticContext).optional(),
-  metadata: z.record(z.any()).default({})
-});
-
-export const ValidationResultSchema = z.object({
-  step: z.nativeEnum(ValidationStep),
-  passed: z.boolean(),
-  score: z.number().min(0).max(100),
-  issues: z.array(QualityIssueSchema),
-  executionTime: z.number(),
-  metadata: z.record(z.any()).default({})
-});
-
-export const QualityReportSchema = z.object({
-  id: z.string(),
-  filePath: z.string(),
-  overallScore: z.number().min(0).max(100),
-  passed: z.boolean(),
-  validationResults: z.array(ValidationResultSchema),
-  semanticAnalysis: z.object({
-    complexity: z.number(),
-    maintainability: z.number(),
-    readability: z.number(),
-    dependencies: z.array(z.string()),
-    exports: z.array(z.string()),
-    imports: z.array(z.string())
-  }),
-  recommendations: z.array(z.string()),
-  createdAt: z.date(),
-  executionTime: z.number()
-});
-
-export const SemanticAnalysisSchema = z.object({
-  filePath: z.string(),
-  language: z.string(),
-  complexity: z.object({
-    cyclomatic: z.number(),
-    cognitive: z.number(),
-    nestingDepth: z.number()
-  }),
-  maintainability: z.object({
-    index: z.number(),
-    issues: z.array(z.string()),
-    suggestions: z.array(z.string())
-  }),
-  dependencies: z.object({
-    internal: z.array(z.string()),
-    external: z.array(z.string()),
-    circular: z.array(z.string())
-  }),
-  symbols: z.array(z.object({
-    name: z.string(),
-    type: z.string(),
-    line: z.number(),
-    complexity: z.number(),
-    visibility: z.string()
-  })),
-  patterns: z.array(z.object({
-    name: z.string(),
-    confidence: z.number(),
-    description: z.string()
-  }))
-});
-
-export const CrossServerCacheSchema = z.object({
-  key: z.string(),
-  data: z.any(),
-  server: z.string(),
-  expiresAt: z.date(),
-  tags: z.array(z.string()).default([])
-});
-
-export const QualityMetricsSchema = z.object({
-  totalFiles: z.number(),
-  averageScore: z.number(),
-  issuesByLevel: z.record(z.number()),
-  stepSuccessRates: z.record(z.number()),
-  trendsOverTime: z.array(z.object({
-    date: z.date(),
-    score: z.number(),
-    issueCount: z.number()
-  })),
-  benchmarks: z.object({
-    industry: z.number(),
-    team: z.number(),
-    project: z.number()
-  })
-});
-
-// ==================== TYPESCRIPT TYPES ====================
-
-export type QualityIssue = z.infer<typeof QualityIssueSchema>;
-export type ValidationResult = z.infer<typeof ValidationResultSchema>;
-export type QualityReport = z.infer<typeof QualityReportSchema>;
-export type SemanticAnalysis = z.infer<typeof SemanticAnalysisSchema>;
-export type CrossServerCache = z.infer<typeof CrossServerCacheSchema>;
-export type QualityMetrics = z.infer<typeof QualityMetricsSchema>;
-
-// ==================== INPUT TYPES ====================
-
-export interface ValidateFileInput {
-  filePath: string;
-  content?: string;
+export interface ValidationTarget {
+  type: 'file' | 'directory' | 'project' | 'codebase';
+  uri: string;
   language?: string;
-  enabledSteps?: ValidationStep[];
-  semanticAnalysis?: boolean;
-  fixableOnly?: boolean;
+  framework?: string;
+  files: string[];
+  excludePatterns: string[];
 }
 
-export interface ValidateProjectInput {
-  projectPath: string;
-  includePaths?: string[];
-  excludePaths?: string[];
-  enabledSteps?: ValidationStep[];
-  parallel?: boolean;
-  maxConcurrency?: number;
+export interface ValidationScopeConfig {
+  depth: ValidationScope;
+  includeExternal?: boolean;
+  crossFileAnalysis?: boolean;
 }
 
-export interface SemanticAnalysisInput {
-  filePath: string;
-  content?: string;
-  language?: string;
-  includePatterns?: boolean;
-  includeComplexity?: boolean;
-  includeDependencies?: boolean;
+export interface QualityGate {
+  name: string;
+  type: QualityGateType;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  validator: QualityValidator;
+  timeout: number;
+  dependencies: string[];
+  configuration: GateConfiguration;
+  enabled: boolean;
 }
 
-export interface QualityBenchmarkInput {
-  type: 'industry' | 'team' | 'project';
-  language?: string;
-  projectType?: string;
-  teamSize?: number;
+export interface GateConfiguration {
+  [key: string]: any;
 }
 
-export interface CrossServerOptimizationInput {
-  targetServers: string[];
-  operationType: string;
-  cacheStrategy: 'aggressive' | 'conservative' | 'disabled';
-  parallelization?: boolean;
+export interface QualityRequirements {
+  securityFrameworks?: string[];
+  minSeverity?: string;
+  compliance?: boolean;
+  semanticChecks?: string[];
+  coverageThreshold?: number;
+  performanceThresholds?: PerformanceThresholds;
 }
 
-// ==================== ERROR TYPES ====================
-
-export class QualityValidationError extends Error {
-  constructor(message: string, public step: ValidationStep, public filePath?: string) {
-    super(message);
-    this.name = 'QualityValidationError';
-  }
+export interface PerformanceThresholds {
+  executionTime?: number;
+  memoryUsage?: number;
+  cpuUsage?: number;
 }
 
-export class SemanticAnalysisError extends Error {
-  constructor(message: string, public filePath?: string, public language?: string) {
-    super(message);
-    this.name = 'SemanticAnalysisError';
-  }
+export interface ValidationConstraints {
+  timeout: number;
+  maxFileSize?: number;
+  maxFiles?: number;
+  resourceLimits?: ResourceLimits;
 }
 
-export class CrossServerIntegrationError extends Error {
-  constructor(message: string, public server?: string, public operation?: string) {
-    super(message);
-    this.name = 'CrossServerIntegrationError';
-  }
+export interface ResourceLimits {
+  memory: number;
+  cpu: number;
+  disk: number;
 }
 
-// ==================== MCP RESULT TYPE ====================
+export interface HookContext {
+  hookType: 'pre' | 'post' | 'stop';
+  operation: string;
+  files: string[];
+  metadata: Record<string, any>;
+}
 
-export interface MCPToolResult {
-  success: boolean;
-  data?: any;
+export interface QualityValidator {
+  validate(context: QualityValidationContext): Promise<ValidationResult>;
+  getName(): string;
+  getType(): QualityGateType;
+  isEnabled(): boolean;
+}
+
+export interface ValidationResult {
+  status: ValidationStatus;
+  valid: boolean;
+  score: number;
+  issues: QualityIssue[];
+  metadata: ValidationMetadata;
+  processingTime: number;
+}
+
+export interface QualityValidationResult {
+  overallResult: ValidationStatus;
+  gateResults: GateResult[];
+  metrics: QualityMetrics;
+  issues: QualityIssue[];
+  recommendations: QualityRecommendation[];
+  performance: ValidationPerformance;
+}
+
+export interface GateResult {
+  gate: string;
+  type: QualityGateType;
+  status: ValidationStatus;
+  score: number;
+  issues: QualityIssue[];
+  processingTime: number;
+  metadata: ValidationMetadata;
+}
+
+export interface QualityIssue {
+  id: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  category: QualityCategory;
+  message: string;
+  location: Location;
+  suggestion: string;
+  autoFixable: boolean;
+  ruleId: string;
+  file?: string;
+}
+
+export interface Location {
+  file: string;
+  line: number;
+  column: number;
+  endLine?: number;
+  endColumn?: number;
+}
+
+export interface QualityRecommendation {
+  type: 'fix' | 'improvement' | 'optimization' | 'security' | 'performance';
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  actionable: boolean;
+  estimatedEffort: 'low' | 'medium' | 'high';
+  categories: QualityCategory[];
+}
+
+export interface QualityMetrics {
+  syntaxScore: number;
+  semanticScore: number;
+  typeScore: number;
+  securityScore: number;
+  performanceScore: number;
+  testCoverage: number;
+  documentationScore: number;
+  overallScore: number;
+  trend: QualityTrend;
+}
+
+export interface QualityTrend {
+  direction: 'improving' | 'declining' | 'stable';
+  changePercent: number;
+  historicalAverage: number;
+}
+
+export interface ValidationMetadata {
+  filesAnalyzed: number;
+  linesAnalyzed?: number;
+  symbolsAnalyzed?: number;
+  rulesApplied?: number;
+  gateDuration: number;
+  cacheHit?: boolean;
+  languageSupport?: Record<string, boolean>;
   error?: string;
-  metadata?: Record<string, any>;
 }
 
-// ==================== VALIDATION CONFIGURATION ====================
+export interface ValidationPerformance {
+  totalTime: number;
+  gateExecutionTimes: Record<string, number>;
+  parallelExecutionTime?: number;
+  cacheHitRate: number;
+  resourceUsage: ResourceUsage;
+}
 
-export interface ValidationConfig {
-  steps: {
-    [key in ValidationStep]: {
-      enabled: boolean;
-      timeout: number;
-      retries: number;
-      weight: number;
-    };
+export interface ResourceUsage {
+  memory: number;
+  cpu: number;
+  diskIO: number;
+  networkIO?: number;
+}
+
+// Semantic Validation Types
+export interface SemanticValidationResult extends ValidationResult {
+  typeConsistency: TypeConsistencyResult;
+  symbolUsage: SymbolUsageResult;
+  references: ReferenceValidationResult;
+  apiContracts: ApiValidationResult;
+  unusedSymbols: UnusedSymbol[];
+}
+
+export interface TypeConsistencyResult {
+  valid: boolean;
+  issues: TypeIssue[];
+  score: number;
+}
+
+export interface TypeIssue {
+  type: 'type_mismatch' | 'missing_type' | 'invalid_type';
+  message: string;
+  location: Location;
+  expected?: string;
+  actual?: string;
+}
+
+export interface SymbolUsageResult {
+  totalSymbols: number;
+  usedSymbols: number;
+  unusedSymbols: number;
+  score: number;
+}
+
+export interface ReferenceValidationResult {
+  valid: boolean;
+  brokenReferences: BrokenReference[];
+  circularDependencies: CircularDependency[];
+}
+
+export interface BrokenReference {
+  symbol: string;
+  location: Location;
+  targetFile: string;
+  issue: string;
+}
+
+export interface CircularDependency {
+  files: string[];
+  symbols: string[];
+  severity: 'warning' | 'error';
+}
+
+export interface ApiValidationResult {
+  valid: boolean;
+  contracts: ApiContract[];
+  breakingChanges: BreakingChange[];
+}
+
+export interface ApiContract {
+  name: string;
+  type: 'function' | 'class' | 'interface' | 'type';
+  signature: string;
+  location: Location;
+  valid: boolean;
+}
+
+export interface BreakingChange {
+  type: 'signature_change' | 'removed_member' | 'type_change';
+  description: string;
+  location: Location;
+  severity: 'major' | 'minor' | 'patch';
+}
+
+export interface UnusedSymbol {
+  name: string;
+  type: 'function' | 'variable' | 'class' | 'interface' | 'import';
+  location: Location;
+  exported: boolean;
+}
+
+// Security Validation Types
+export interface SecurityValidationResult extends ValidationResult {
+  vulnerabilities: Vulnerability[];
+  riskScore: number;
+  complianceStatus: ComplianceStatus;
+  recommendations: SecurityRecommendation[];
+}
+
+export interface Vulnerability {
+  id: string;
+  type: 'xss' | 'sql_injection' | 'csrf' | 'auth_bypass' | 'data_exposure' | 'code_injection';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  location: Location;
+  cwe?: string;
+  owasp?: string;
+  remediation: string;
+}
+
+export interface ComplianceStatus {
+  framework: string;
+  score: number;
+  compliant: boolean;
+  violations: ComplianceViolation[];
+}
+
+export interface ComplianceViolation {
+  rule: string;
+  description: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  locations: Location[];
+}
+
+export interface SecurityRecommendation extends QualityRecommendation {
+  securityImpact: 'critical' | 'high' | 'medium' | 'low';
+  compliance: string[];
+}
+
+// Performance Validation Types
+export interface PerformanceValidationResult extends ValidationResult {
+  metrics: PerformanceMetrics;
+  issues: PerformanceIssue[];
+  benchmarks: BenchmarkResult[];
+}
+
+export interface PerformanceMetrics {
+  executionTime: number;
+  memoryUsage: number;
+  cpuUsage: number;
+  throughput?: number;
+  latency?: number;
+}
+
+export interface PerformanceIssue extends QualityIssue {
+  type: 'slow_function' | 'memory_leak' | 'cpu_intensive' | 'inefficient_algorithm';
+  impact: string;
+}
+
+export interface BenchmarkResult {
+  name: string;
+  iterations: number;
+  averageTime: number;
+  medianTime: number;
+  minTime: number;
+  maxTime: number;
+  standardDeviation: number;
+}
+
+// Test Validation Types
+export interface TestValidationResult extends ValidationResult {
+  testResults: TestResult[];
+  coverage: CoverageResult;
+  summary: TestSummary;
+}
+
+export interface TestResult {
+  name: string;
+  status: 'passed' | 'failed' | 'skipped';
+  duration: number;
+  error?: string;
+  location: Location;
+}
+
+export interface CoverageResult {
+  percentage: number;
+  lines: CoverageData;
+  functions: CoverageData;
+  branches: CoverageData;
+  statements: CoverageData;
+}
+
+export interface CoverageData {
+  total: number;
+  covered: number;
+  percentage: number;
+}
+
+export interface TestSummary {
+  total: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  duration: number;
+}
+
+// Tool Input Types
+export interface ExecuteQualityGatesArgs {
+  target: {
+    type: 'file' | 'directory' | 'project';
+    path: string;
+    excludePatterns?: string[];
   };
-  thresholds: {
-    overallScore: number;
-    stepMinimums: Record<ValidationStep, number>;
-  };
-  semantic: {
-    enabled: boolean;
-    complexityThreshold: number;
-    maintainabilityThreshold: number;
-  };
-  caching: {
-    enabled: boolean;
-    ttl: number;
-    maxSize: number;
-  };
-  integration: {
-    orchestrator: boolean;
-    code: boolean;
-    tasks: boolean;
+  gates?: QualityGateType[];
+  options?: {
+    parallelExecution?: boolean;
+    earlyTermination?: boolean;
+    generateReport?: boolean;
+    includeRecommendations?: boolean;
   };
 }
 
-export const DEFAULT_VALIDATION_CONFIG: ValidationConfig = {
-  steps: {
-    [ValidationStep.SYNTAX]: { enabled: true, timeout: 5000, retries: 1, weight: 15 },
-    [ValidationStep.TYPE_CHECK]: { enabled: true, timeout: 10000, retries: 2, weight: 20 },
-    [ValidationStep.LINT]: { enabled: true, timeout: 8000, retries: 1, weight: 15 },
-    [ValidationStep.SECURITY]: { enabled: true, timeout: 15000, retries: 2, weight: 20 },
-    [ValidationStep.TEST]: { enabled: true, timeout: 30000, retries: 1, weight: 15 },
-    [ValidationStep.PERFORMANCE]: { enabled: true, timeout: 20000, retries: 2, weight: 10 },
-    [ValidationStep.DOCUMENTATION]: { enabled: true, timeout: 5000, retries: 1, weight: 5 },
-    [ValidationStep.INTEGRATION]: { enabled: true, timeout: 25000, retries: 2, weight: 0 }
-  },
-  thresholds: {
-    overallScore: 80,
-    stepMinimums: {
-      [ValidationStep.SYNTAX]: 95,
-      [ValidationStep.TYPE_CHECK]: 90,
-      [ValidationStep.LINT]: 85,
-      [ValidationStep.SECURITY]: 95,
-      [ValidationStep.TEST]: 80,
-      [ValidationStep.PERFORMANCE]: 75,
-      [ValidationStep.DOCUMENTATION]: 70,
-      [ValidationStep.INTEGRATION]: 80
-    }
-  },
-  semantic: {
-    enabled: true,
-    complexityThreshold: 10,
-    maintainabilityThreshold: 70
-  },
-  caching: {
-    enabled: true,
-    ttl: 3600000, // 1 hour
-    maxSize: 1000
-  },
-  integration: {
-    orchestrator: true,
-    code: true,
-    tasks: true
-  }
-};
+export interface ValidateSemanticArgs {
+  target: {
+    files: string[];
+    language?: string;
+  };
+  checks?: string[];
+  options?: {
+    includeUnused?: boolean;
+    validateContracts?: boolean;
+    checkCrossFile?: boolean;
+  };
+}
+
+export interface ScanSecurityArgs {
+  target: {
+    path: string;
+    type: 'file' | 'directory' | 'project';
+    includeDependencies?: boolean;
+  };
+  frameworks?: string[];
+  severity?: string;
+  options?: {
+    includeCompliance?: boolean;
+    scanDependencies?: boolean;
+    generateReport?: boolean;
+  };
+}
+
+// Configuration Types
+export interface QualityServerConfig {
+  serverName: 'superclaude-quality';
+  capabilities: ['tools', 'resources', 'prompts'];
+  validationPipeline: {
+    enableFullPipeline: boolean;
+    enableParallelValidation: boolean;
+    enableProgressiveValidation: boolean;
+    maxValidationTime: number;
+    enableEarlyTermination: boolean;
+  };
+  qualityGates: Record<QualityGateType, QualityGateConfig>;
+  hookIntegration: {
+    enablePreToolUseValidation: boolean;
+    enablePostToolUseValidation: boolean;
+    enableStopHookReporting: boolean;
+    enableRealTimeMonitoring: boolean;
+  };
+  securityScanning: {
+    enableOWASPValidation: boolean;
+    enableVulnerabilityScanning: boolean;
+    enableComplianceChecking: boolean;
+    enableDependencyScanning: boolean;
+    securityThreshold: string;
+  };
+  performance: {
+    enableCaching: boolean;
+    cacheTTL: number;
+    enableBatchValidation: boolean;
+    maxConcurrentValidations: number;
+    enableProgressiveResults: boolean;
+  };
+}
+
+export interface QualityGateConfig {
+  enabled: boolean;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  timeout: number;
+}

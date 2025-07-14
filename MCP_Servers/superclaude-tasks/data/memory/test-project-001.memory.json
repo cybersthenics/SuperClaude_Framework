@@ -1,0 +1,78 @@
+{
+  "projectId": "test-project-001",
+  "lastUpdated": "2025-07-14T14:39:37.301Z",
+  "version": "1.0.0",
+  "semanticCache": {
+    "symbols": {
+      "TaskManagerSimple": {
+        "name": "TaskManagerSimple",
+        "type": "class",
+        "location": "src/core/TaskManagerSimple.ts",
+        "references": [
+          "src/MCPServerMemory.ts",
+          "src/MCPServerWorking.ts"
+        ],
+        "usageCount": 2,
+        "lastModified": "2025-07-14T14:39:37.301Z"
+      }
+    },
+    "dependencies": {},
+    "patterns": {},
+    "lastUpdated": "2025-07-14T14:39:37.301Z"
+  },
+  "symbolIndex": {
+    "files": {},
+    "symbols": {
+      "TaskManagerSimple": {
+        "name": "TaskManagerSimple",
+        "type": "class",
+        "location": "src/core/TaskManagerSimple.ts",
+        "references": [
+          "src/MCPServerMemory.ts",
+          "src/MCPServerWorking.ts"
+        ],
+        "usageCount": 2
+      }
+    },
+    "lastUpdated": "2025-07-14T14:39:37.301Z",
+    "version": "1.0.0"
+  },
+  "analysisHistory": [],
+  "taskHistory": [
+    {
+      "taskId": "6584e099-f3a8-46f0-b4d0-4058c7127044",
+      "action": "created",
+      "details": {
+        "type": "feature",
+        "priority": "high",
+        "estimatedHours": 8
+      },
+      "timestamp": "2025-07-14T14:39:11.521Z"
+    }
+  ],
+  "performanceBaseline": {
+    "averageTaskTime": 0,
+    "estimationAccuracy": 0,
+    "resourceUtilization": 0,
+    "throughput": 0,
+    "lastUpdated": "2025-07-14T14:38:18.784Z"
+  },
+  "contextSnapshots": [
+    {
+      "id": "64624bd3-bed6-46c3-807d-15bde9cd1c1b",
+      "projectId": "test-project-001",
+      "description": "Phase 3 task creation snapshot",
+      "timestamp": "2025-07-14T14:39:22.338Z",
+      "size": 227,
+      "compressed": false,
+      "metadata": {
+        "contextItems": 1,
+        "types": [
+          "task_creation"
+        ],
+        "createdBy": "system",
+        "version": "1.0.0"
+      }
+    }
+  ]
+}
