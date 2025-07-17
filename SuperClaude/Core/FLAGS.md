@@ -96,6 +96,32 @@ Flag system for Claude Code SuperClaude framework with auto-activation and confl
 - Disable specific MCP server (e.g., --no-magic, --no-seq)
 - Server-specific fallback strategies, 10-30% faster per disabled server
 
+## MorphLLM Integration Flags
+
+**`--morph` / `--morphllm`**
+- Enable MorphLLM filesystem tools for blazing-fast file operations
+- Auto-activates: Filesystem-heavy operations, batch file edits, large directory scans
+- Detection: Multiple file operations, edit chains, directory traversal patterns
+- Requires: MorphLLM MCP server configuration with API key
+
+**`--morph-only`**
+- Force exclusive MorphLLM usage, block native filesystem tools
+- Maximum performance mode with no fallback to native tools
+- Auto-activates: Never (explicit use only for performance-critical operations)
+- Requires: Validated MorphLLM MCP server availability
+
+**`--morph-fast`**
+- Optimize for MorphLLM's fast-apply capabilities
+- Batch filesystem operations when possible
+- Minimize tool switching overhead and context preservation
+- Auto-activates: Large-scale refactoring, multi-file operations >10 files
+
+**`--no-morph`**
+- Disable MorphLLM integration, use native tools only
+- Override auto-activation patterns for debugging or compatibility
+- Fallback for MorphLLM server unavailability
+- 15-25% slower for filesystem operations but higher compatibility
+
 ## Sub-Agent Delegation Flags
 
 **`--delegate [files|folders|auto]`**
@@ -200,6 +226,7 @@ Flag system for Claude Code SuperClaude framework with auto-activation and confl
 - **Sequential**: Complex debugging, system design, any --think flags  
 - **Magic**: UI component requests, design system queries, frontend persona
 - **Playwright**: Testing workflows, performance monitoring, QA persona
+- **MorphLLM**: Filesystem-heavy operations, batch file edits, large directory operations
 
 ### Flag Precedence
 
@@ -207,15 +234,17 @@ Flag system for Claude Code SuperClaude framework with auto-activation and confl
 2. Explicit flags > auto-activation
 3. Thinking depth: --ultrathink > --think-hard > --think
 4. --no-mcp overrides all individual MCP flags
-5. Scope: system > project > module > file
-6. Last specified persona takes precedence
-7. Wave mode: --wave-mode off > --wave-mode force > --wave-mode auto
-8. Sub-Agent delegation: explicit --delegate > auto-detection
-9. Loop mode: explicit --loop > auto-detection based on refinement keywords
-10. --uc auto-activation overrides verbose flags
+5. MorphLLM precedence: --morph-only > --morph-fast > --morph > --no-morph
+6. Scope: system > project > module > file
+7. Last specified persona takes precedence
+8. Wave mode: --wave-mode off > --wave-mode force > --wave-mode auto
+9. Sub-Agent delegation: explicit --delegate > auto-detection
+10. Loop mode: explicit --loop > auto-detection based on refinement keywords
+11. --uc auto-activation overrides verbose flags
 
 ### Context-Based Auto-Activation
 
 **Wave Auto-Activation**: complexity ≥0.7 AND files >20 AND operation_types >2
 **Sub-Agent Auto-Activation**: >7 directories OR >50 files OR complexity >0.8
 **Loop Auto-Activation**: polish, refine, enhance, improve keywords detected
+**MorphLLM Auto-Activation**: filesystem operations >5 OR batch edits >3 OR directory scans >10 files

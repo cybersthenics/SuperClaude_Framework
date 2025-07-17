@@ -147,21 +147,77 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 - Cross-Browser Testing: Validate functionality across all major browsers
 - User Experience Testing: Accessibility validation, usability testing, conversion optimization
 
+## MorphLLM Integration (Fast Filesystem Operations)
+
+**Purpose**: Blazing-fast file editing and filesystem operations, optimized for rapid code transformations
+
+**Activation Patterns**:
+- Automatic: Filesystem-heavy operations, batch file edits, large directory scans
+- Manual: `--morph`, `--morphllm` flags
+- Smart: Multiple file operations, edit chains, directory traversal patterns
+- Exclusive: `--morph-only` for maximum performance mode
+
+**Workflow Process**:
+1. Server Validation: Verify MorphLLM MCP server availability and API key authentication
+2. Tool Mapping: Map native Claude Code tools to MorphLLM equivalents
+3. Operation Batching: Group related filesystem operations for optimal performance
+4. Fast Execution: Execute operations using MorphLLM's optimized filesystem tools
+5. Context Preservation: Maintain operation context across tool switches
+6. Performance Monitoring: Track execution times and compare against native tools
+7. Error Handling: Implement graceful fallback to native tools on failures
+8. Result Validation: Verify operation success and data integrity
+9. Cache Management: Optimize repeated operations through intelligent caching
+10. Cleanup: Ensure proper resource cleanup after operations
+
+**Tool Mapping**:
+- `Read` → `mcp__morph__read_file`: Fast file reading with optimized encoding
+- `Write` → `mcp__morph__write_file`: High-speed file writing with atomic operations
+- `Edit` → `mcp__morph__edit_file`: Rapid code editing with fast-apply technology
+- `LS` → `mcp__morph__list_directory`: Optimized directory listing with metadata
+- `Glob` → `mcp__morph__search_files`: High-performance file pattern matching
+- `MultiEdit` → Batch `mcp__morph__edit_file`: Coordinated multi-file editing
+
+**Performance Characteristics**:
+- File Operations: 20-40% faster than native tools for most operations
+- Batch Edits: 30-60% improvement for multi-file operations
+- Directory Scans: 25-50% faster directory traversal and listing
+- Large Files: Optimized handling of files >1MB with streaming support
+- Concurrent Operations: Intelligent parallelization for independent file operations
+
+**Integration Commands**: `/implement`, `/improve`, `/build`, `/analyze`, `/cleanup`, `/git`
+
+**Error Recovery**:
+- Server unavailable → Graceful fallback to native tools → Log performance impact
+- API key invalid → Display clear error message → Provide configuration guidance
+- Operation timeout → Retry with native tools → Monitor for systematic issues
+- File lock conflicts → Implement retry logic → Fallback to native tools
+- Memory constraints → Optimize batch sizes → Use streaming for large operations
+
+**Auto-Activation Triggers**:
+- Filesystem operations >5 in single command execution
+- Batch edits >3 files in coordinated operation
+- Directory scans >10 files or >2 directory levels
+- Large file operations >1MB total data processed
+- Multi-file refactoring or code transformation tasks
+
 ## MCP Server Use Cases by Command Category
 
 **Development Commands**:
 - Context7: Framework patterns, library documentation
 - Magic: UI component generation
 - Sequential: Complex setup workflows
+- MorphLLM: Fast filesystem operations, batch code editing
 
 **Analysis Commands**:
 - Context7: Best practices, patterns
 - Sequential: Deep analysis, systematic review
 - Playwright: Issue reproduction, visual testing
+- MorphLLM: Fast codebase analysis, multi-file inspection
 
 **Quality Commands**:
 - Context7: Security patterns, improvement patterns
 - Sequential: Code analysis, cleanup strategies
+- MorphLLM: Fast refactoring, batch code improvements
 
 **Testing Commands**:
 - Sequential: Test strategy development
@@ -199,6 +255,7 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 - Sequential Cache: Analysis results with pattern matching
 - Magic Cache: Component patterns with design system versioning
 - Playwright Cache: Test results and screenshots with environment-specific caching
+- MorphLLM Cache: Filesystem operation results with intelligent file monitoring
 - Cross-Server Cache: Shared cache for multi-server operations
 - Loop Optimization: Cache iterative analysis results, reuse improvement patterns
 
@@ -207,6 +264,7 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 - Sequential timeout → Use native Claude Code analysis → Note limitations
 - Magic failure → Generate basic component → Suggest manual enhancement
 - Playwright connection lost → Suggest manual testing → Provide test cases
+- MorphLLM unavailable → Fallback to native filesystem tools → Log performance impact
 
 **Recovery Strategies**:
 - Exponential Backoff: Automatic retry with exponential backoff and jitter

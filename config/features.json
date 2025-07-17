@@ -27,13 +27,34 @@
       "enabled": true,
       "required_tools": ["node", "claude_cli"]
     },
+    "morphllm": {
+      "name": "morphllm",
+      "version": "3.0.0",
+      "description": "MorphLLM fast filesystem operations integration with Claude Code hooks",
+      "category": "integration",
+      "dependencies": ["core", "hooks"],
+      "enabled": true,
+      "required_tools": ["claude_cli", "morph_api_key"],
+      "configuration": {
+        "auto_activation": true,
+        "performance_monitoring": true,
+        "fallback_enabled": true,
+        "circuit_breaker_enabled": true,
+        "default_flags": ["--morph-fast"],
+        "hook_files": [
+          "morph_tool_interceptor.py",
+          "morph_performance_monitor.py", 
+          "morph_error_handler.py"
+        ]
+      }
+    },
     "hooks": {
       "name": "hooks",
       "version": "3.0.0",
       "description": "Claude Code hooks integration (future-ready)",
       "category": "integration", 
       "dependencies": ["core"],
-      "enabled": false,
+      "enabled": true,
       "required_tools": []
     }
   }

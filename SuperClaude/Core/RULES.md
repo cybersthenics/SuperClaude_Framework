@@ -34,6 +34,18 @@ Simple actionable rules for Claude Code SuperClaude framework operation.
 - Validate related functionality remains working
 - Use Task tool for comprehensive searches when scope uncertain
 
+### MorphLLM Integration Rules
+- **MANDATORY**: Validate MorphLLM MCP server availability before routing filesystem operations
+- Implement graceful fallback to native tools on MorphLLM server failures
+- Batch filesystem operations when using MorphLLM for optimal performance
+- Monitor performance metrics to ensure MorphLLM provides measurable speed benefits
+- Use --morph-only flag cautiously - ensure proper error handling and fallback mechanisms
+- Preserve operation context when switching between MorphLLM and native tools
+- Log performance comparisons between MorphLLM and native tools for optimization
+- Validate file integrity after MorphLLM operations before marking tasks complete
+- Never block user operations due to MorphLLM unavailability - always provide fallback
+- Maintain tool mapping accuracy between native and MorphLLM equivalents
+
 ## Quick Reference
 
 ### Do
@@ -47,6 +59,9 @@ Simple actionable rules for Claude Code SuperClaude framework operation.
 ✅ Use quality gates (see ORCHESTRATOR.md)
 ✅ Complete discovery before codebase changes
 ✅ Verify completion with evidence
+✅ Validate MorphLLM server before routing
+✅ Implement fallback for MorphLLM failures
+✅ Monitor MorphLLM performance metrics
 
 ### Don't
 ❌ Skip Read operations
@@ -58,9 +73,13 @@ Simple actionable rules for Claude Code SuperClaude framework operation.
 ❌ Override safety protocols
 ❌ Make reactive codebase changes
 ❌ Mark complete without verification
+❌ Use --morph-only without fallback handling
+❌ Route to MorphLLM without server validation
+❌ Ignore MorphLLM performance degradation
 
 ### Auto-Triggers
 - Wave mode: complexity ≥0.7 + multiple domains
 - Personas: domain keywords + complexity assessment  
 - MCP servers: task type + performance requirements
+- MorphLLM: filesystem operations >5 OR batch edits >3 OR directory scans >10 files
 - Quality gates: all operations apply 8-step validation

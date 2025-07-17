@@ -1,10 +1,11 @@
 {
   "name": "Developer Installation", 
-  "description": "Full installation with all components including MCP servers",
+  "description": "Full installation with all components including MCP servers and MorphLLM fast filesystem operations",
   "components": [
     "core",
     "commands",
-    "mcp"
+    "mcp",
+    "morphllm"
   ],
   "features": {
     "auto_update": false,
@@ -12,6 +13,6 @@
     "validation_level": "comprehensive"
   },
   "target_users": ["developers", "power_users"],
-  "estimated_time_minutes": 5,
-  "disk_space_mb": 100
+  "estimated_time_minutes": 7,
+  "disk_space_mb": 120
 }

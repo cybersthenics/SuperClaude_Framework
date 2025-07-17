@@ -2,6 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://img.shields.io/pypi/v/SuperClaude.svg)](https://pypi.org/project/SuperClaude/)
 [![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/NomenAK/SuperClaude)
+[![PyPI version](https://img.shields.io/pypi/v/SuperClaude.svg)](https://pypi.org/project/SuperClaude/)
 [![GitHub issues](https://img.shields.io/github/issues/NomenAK/SuperClaude)](https://github.com/NomenAK/SuperClaude/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/NomenAK/SuperClaude/blob/master/CONTRIBUTING.md)
 [![Contributors](https://img.shields.io/github/contributors/NomenAK/SuperClaude)](https://github.com/NomenAK/SuperClaude/graphs/contributors)
@@ -16,6 +17,7 @@ SuperClaude tries to make Claude Code more helpful for development work by addin
 - 🛠️ **16 specialized commands** for common dev tasks (some work better than others!)
 - 🎭 **Smart personas** that usually pick the right expert for different domains 
 - 🔧 **MCP server integration** for docs, UI components, and browser automation
+- 🚀 **MorphLLM integration** for blazing-fast filesystem operations (20-60% faster!)
 - 📋 **Task management** that tries to keep track of progress
 - ⚡ **Token optimization** to help with longer conversations
 
@@ -28,13 +30,14 @@ This is what we've been building to make development workflows smoother. Still r
 - Core framework with 9 documentation files 
 - 16 slash commands for various development tasks
 - MCP server integration (Context7, Sequential, Magic, Playwright)
+- MorphLLM integration for fast filesystem operations
 - Unified CLI installer for easy setup
 
 ⚠️ **Known Issues:**
 - This is an initial release - bugs are expected
 - Some features may not work perfectly yet
 - Documentation is still being improved
-- Hooks system was removed (coming back in v4)
+- MorphLLM integration is new and may have edge cases
 
 ## Key Features ✨
 
@@ -64,6 +67,7 @@ External tools that connect when useful:
 - **Sequential** - Helps with complex multi-step thinking  
 - **Magic** - Generates modern UI components 
 - **Playwright** - Browser automation and testing stuff
+- **MorphLLM** - Blazing-fast filesystem operations (20-60% faster!)
 
 *(These work pretty well when they connect properly! 🤞)*
 
@@ -90,74 +94,25 @@ This is because v3 has a different structure and the old files can cause conflic
 
 ## Installation 📦
 
-SuperClaude installation is a **two-step process**:
-1. First install the Python package
-2. Then run the installer to set up Claude Code integration
-
-### Step 1: Install the Package
-
-**Option A: From PyPI (Recommended)**
+### Quick Start
 ```bash
-uv add SuperClaude
+pip install SuperClaude
+#Install with python-pip
 ```
-
-**Option B: From Source**
+### Install via Git
 ```bash
+# Clone the repo
 git clone https://github.com/NomenAK/SuperClaude.git
 cd SuperClaude
-uv sync
-```
-### 🔧 UV / UVX Setup Guide
 
-SuperClaude v3 also supports installation via [`uv`](https://github.com/astral-sh/uv) (a faster, modern Python package manager) or `uvx` for cross-platform usage.
+# Install with our unified CLI
+pip install .
 
-### 🌀 Install with `uv`
-
-Make sure `uv` is installed:
-
-```bash
-curl -Ls https://astral.sh/uv/install.sh | sh
+# That's it! 🎉
 ```
 
-> Or follow instructions from: [https://github.com/astral-sh/uv](https://github.com/astral-sh/uv)
 
-Once `uv` is available, you can install SuperClaude like this:
-
-```bash
-uv venv
-source .venv/bin/activate
-uv pip install SuperClaude
-```
-
-### ⚡ Install with `uvx` (Cross-platform CLI)
-
-If you’re using `uvx`, just run:
-
-```bash
-uvx pip install SuperClaude
-```
-
-### ✅ Finish Installation
-
-After installing, continue with the usual installer step:
-
-```bash
-python3 -m SuperClaude install
-```
-
-Or using bash-style CLI:
-
-```bash
-SuperClaude install
-```
-
-### 🧠 Note:
-
-* `uv` provides better caching and performance.
-* Compatible with Python 3.8+ and works smoothly with SuperClaude.
-
----
-**Missing Python?** Install Python 3.7+ first:
+**Missing Python?**
 ```bash
 # Linux (Ubuntu/Debian)
 sudo apt update && sudo apt install python3 python3-pip
@@ -169,65 +124,39 @@ brew install python3
 # Download from https://python.org/downloads/
 ```
 
-### Step 2: Run the Installer
-
-After installing the package, run the SuperClaude installer to configure Claude Code (You can use any of the method):
-### ⚠️ Important Note 
-**After installing the SuperClaude.**
-**You can use `SuperClaude commands`
-, `python3 -m SuperClaude commands` or also `python3 SuperClaude commands`**
+### Other Installation Options
 ```bash
-# Quick setup (recommended for most users)
-python3 SuperClaude install
-
-# Interactive selection (choose components)
-python3 SuperClaude install --interactive
-
 # Minimal install (just core framework)
 python3 SuperClaude install --minimal
 
-# Developer setup (everything included)
+# Developer setup (everything)  
 python3 SuperClaude install --profile developer
 
-# See all available options
-python3 SuperClaude install --help
+# Interactive selection
+python3 SuperClaude install
+
+# See what's available
+python3 SuperClaude install --list-components
 ```
-### Or Python Modular Usage
+
+The installer handles everything: framework files, MCP servers, and Claude Code configuration.
+
+### MorphLLM Setup (Optional but Recommended) 🚀
+
+For blazing-fast filesystem operations, install MorphLLM:
+
 ```bash
-# Quick setup (recommended for most users)
-python3 -m SuperClaude install
+# Install MorphLLM MCP server
+npm install -g @morph-llm/morph-fast-apply
 
-# Interactive selection (choose components)
-python3 -m SuperClaude install --interactive
+# Configure API key (get from https://morphllm.com/dashboard)
+export MORPH_API_KEY="your_api_key_here"
 
-# Minimal install (just core framework)
-python3 -m SuperClaude install --minimal
-
-# Developer setup (everything included)
-python3 -m SuperClaude install --profile developer
-
-# See all available options
-python3 -m SuperClaude install --help
-```
-### Simple bash Command Usage 
-```bash
-# Quick setup (recommended for most users)
-SuperClaude install
-
-# Interactive selection (choose components)
-SuperClaude install --interactive
-
-# Minimal install (just core framework)
-SuperClaude install --minimal
-
-# Developer setup (everything included)
-SuperClaude install --profile developer
-
-# See all available options
-SuperClaude install --help
+# Install SuperClaude with MorphLLM support
+python3 SuperClaude install --profile developer
 ```
 
-**That's it! 🎉** The installer handles everything: framework files, MCP servers, and Claude Code configuration.
+MorphLLM provides 20-60% faster filesystem operations with automatic fallback to native tools.
 
 ## How It Works 🔄
 
@@ -263,11 +192,12 @@ Most users probably won't need to change anything - it usually works okay out of
 
 Want to learn more? Check out our guides:
 
-- 📚 [**User Guide**](https://github.com/NomenAK/SuperClaude/blob/master/Docs/superclaude-user-guide.md) - Complete overview and getting started
-- 🛠️ [**Commands Guide**](https://github.com/NomenAK/SuperClaude/blob/master/Docs/commands-guide.md) - All 16 slash commands explained  
-- 🏳️ [**Flags Guide**](https://github.com/NomenAK/SuperClaude/blob/master/Docs/flags-guide.md) - Command flags and options
-- 🎭 [**Personas Guide**](https://github.com/NomenAK/SuperClaude/blob/master/Docs/personas-guide.md) - Understanding the persona system
-- 📦 [**Installation Guide**](https://github.com/NomenAK/SuperClaude/blob/master/Docs/installation-guide.md) - Detailed installation instructions
+- 📚 [**User Guide**](Docs/superclaude-user-guide.md) - Complete overview and getting started
+- 🛠️ [**Commands Guide**](Docs/commands-guide.md) - All 16 slash commands explained  
+- 🏳️ [**Flags Guide**](Docs/flags-guide.md) - Command flags and options
+- 🎭 [**Personas Guide**](Docs/personas-guide.md) - Understanding the persona system
+- 📦 [**Installation Guide**](Docs/installation-guide.md) - Detailed installation instructions
+- 🚀 [**MorphLLM Integration Guide**](Docs/morphllm-integration-guide.md) - Setup and usage for blazing-fast filesystem operations
 
 These guides have more details than this README and are kept up to date.
 

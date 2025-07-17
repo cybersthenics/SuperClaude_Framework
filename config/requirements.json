@@ -4,15 +4,22 @@
   },
   "node": {
     "min_version": "16.0.0",
-    "required_for": ["mcp"]
+    "required_for": ["mcp", "morphllm"]
   },
   "disk_space_mb": 500,
   "external_tools": {
     "claude_cli": {
       "command": "claude --version",
       "min_version": "0.1.0",
-      "required_for": ["mcp"],
+      "required_for": ["mcp", "morphllm"],
       "optional": false
+    },
+    "morph_mcp_server": {
+      "command": "npm list -g @morph-llm/morph-fast-apply",
+      "min_version": "1.0.0",
+      "required_for": ["morphllm"],
+      "optional": false,
+      "description": "MorphLLM MCP server for fast filesystem operations"
     },
     "git": {
       "command": "git --version",
@@ -49,6 +56,11 @@
       "darwin": "npm is included with Node.js",
       "win32": "npm is included with Node.js",
       "description": "npm is required for installing MCP servers"
+    },
+    "morph_mcp_server": {
+      "all": "npm install -g @morph-llm/morph-fast-apply",
+      "description": "Install MorphLLM MCP server for fast filesystem operations",
+      "post_install": "Configure MorphLLM API key and server settings in Claude Code MCP configuration"
     }
   }
 }
